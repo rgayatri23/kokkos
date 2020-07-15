@@ -106,6 +106,7 @@ class OpenMPTargetExecTeamMember {
   int m_vector_length;
   int m_vector_lane;
   void* m_glb_scratch;
+  void *m_reduce_scratch;
 
   /*
   // Fan-in team threads, root of the fan-in which does not block returns true
@@ -158,6 +159,7 @@ class OpenMPTargetExecTeamMember {
   KOKKOS_INLINE_FUNCTION int league_size() const { return m_league_size; }
   KOKKOS_INLINE_FUNCTION int team_rank() const { return m_team_rank; }
   KOKKOS_INLINE_FUNCTION int team_size() const { return m_team_size; }
+  KOKKOS_INLINE_FUNCTION void* impl_reduce_scratch() const { return m_reduce_scratch; }
 
   KOKKOS_INLINE_FUNCTION void team_barrier() const {
 #pragma omp barrier
@@ -305,9 +307,11 @@ class OpenMPTargetExecTeamMember {
         m_league_size(league_size),
         m_glb_scratch(glb_scratch) {
     const int omp_tid = omp_get_thread_num();
+    const int omp_team_num = omp_get_team_num();
+    m_reduce_scratch = (char*) glb_scratch + omp_team_num*TEAM_REDUCE_SIZE;
     m_league_rank     = league_rank;
-    m_team_rank       = omp_tid / m_vector_length;
-    m_vector_lane     = omp_tid % m_vector_length;
+    m_team_rank       = omp_tid;
+    m_vector_lane     = 0;
   }
 
   static inline int team_reduce_size() { return TEAM_REDUCE_SIZE; }
@@ -584,8 +588,9 @@ KOKKOS_INLINE_FUNCTION void parallel_for(
     const Impl::TeamThreadRangeBoundariesStruct<
         iType, Impl::OpenMPTargetExecTeamMember>& loop_boundaries,
     const Lambda& lambda) {
+#pragma omp for nowait
   for (iType i = loop_boundaries.start; i < loop_boundaries.end;
-       i += loop_boundaries.increment)
+       i += 1)
     lambda(i);
 }
 
@@ -602,12 +607,20 @@ KOKKOS_INLINE_FUNCTION void parallel_reduce(
     const Lambda& lambda, ValueType& result) {
   result = ValueType();
 
+  ValueType* tmp_scratch = (ValueType*) loop_boundaries.team.impl_reduce_scratch();
+#pragma omp barrier
+  tmp_scratch[0] = ValueType();
+#pragma omp barrier
+
+#pragma omp for reduction(+:tmp_scratch[:1])
   for (iType i = loop_boundaries.start; i < loop_boundaries.end;
-       i += loop_boundaries.increment) {
+       i += 1) {
     ValueType tmp = ValueType();
     lambda(i, tmp);
-    result += tmp;
+    tmp_scratch[0] += tmp;
   }
+
+  result = tmp_scratch[0];
 
   // result =
   // loop_boundaries.thread.team_reduce(result,Impl::JoinAdd<ValueType>());

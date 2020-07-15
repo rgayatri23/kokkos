@@ -950,15 +950,18 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
     void* scratch_ptr = OpenMPTargetExec::get_scratch_ptr();
 
     FunctorType a_functor(m_functor);
-#pragma omp target teams distribute parallel for num_teams(league_size) \
-    num_threads(team_size* vector_length) schedule(static, 1)           \
+#pragma omp target teams distribute parallel for num_teams(nteams) \
+    num_threads(team_size) schedule(static, 1)           \
         map(to                                                          \
             : a_functor, scratch_ptr)
-    for (int i = 0; i < league_size * team_size * vector_length; i++) {
-      typename Policy::member_type team(i / (team_size * vector_length),
+    for (int i = 0; i < league_size ; i++) {
+#pragma omp parallel
+      {
+      typename Policy::member_type team(i ,
                                         league_size, team_size, vector_length,
                                         scratch_ptr, 0, 0);
       m_functor(team);
+      }
     }
   }
 
@@ -1031,12 +1034,15 @@ struct ParallelReduceSpecialize<FunctorType, TeamPolicyInternal<PolicyArgs...>,
     ValueType result = ValueType();
 #pragma omp target teams distribute parallel for num_teams(nteams) num_threads(team_size*vector_length) \
          map(to:f,scratch_ptr) map(tofrom:result) reduction(+: result) schedule(static,1)
-    for (int i = 0; i < league_size * team_size * vector_length; i++) {
-      typename PolicyType::member_type team(i / (team_size * vector_length),
+    for (int i = 0; i < league_size ; i++) {
+#pragma omp parallel
+      {
+      typename PolicyType::member_type team(i ,
                                             league_size, team_size,
                                             vector_length, scratch_ptr, 0, 0);
       f(team, result);
       if (team.m_vector_lane != 0) result = 0;
+    }
     }
 
     *result_ptr = result;
@@ -1171,18 +1177,21 @@ struct TeamThreadRangeBoundariesStruct<iType, OpenMPTargetExecTeamMember> {
   typedef iType index_type;
   const iType start;
   const iType end;
-  const iType increment;
+  const OpenMPTargetExecTeamMember& team ;
+
 
   inline TeamThreadRangeBoundariesStruct(
-      const OpenMPTargetExecTeamMember& thread_, iType count)
-      : start(thread_.team_rank()),
+      const OpenMPTargetExecTeamMember& team_in, iType count)
+      : start(0),
         end(count),
-        increment(thread_.team_size()) {}
+        team(team_in)
+        {}
   inline TeamThreadRangeBoundariesStruct(
-      const OpenMPTargetExecTeamMember& thread_, iType begin_, iType end_)
-      : start(begin_ + thread_.team_rank()),
+      const OpenMPTargetExecTeamMember& team_in, iType begin_, iType end_)
+      : start(begin_),
         end(end_),
-        increment(thread_.team_size()) {}
+        team(team_in)
+        {}
 };
 
 template <typename iType>
