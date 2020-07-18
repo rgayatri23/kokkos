@@ -950,17 +950,18 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
     void* scratch_ptr = OpenMPTargetExec::get_scratch_ptr();
 
     FunctorType a_functor(m_functor);
-#pragma omp target teams distribute parallel for num_teams(nteams) \
-    num_threads(team_size) schedule(static, 1)           \
+#pragma omp target teams distribute \
         map(to                                                          \
-            : a_functor, scratch_ptr)
+            : a_functor, scratch_ptr) \
+    num_teams(nteams) thread_limit(team_size)
     for (int i = 0; i < league_size ; i++) {
+      // Start parallel threads for each block
 #pragma omp parallel
       {
-      typename Policy::member_type team(i ,
-                                        league_size, team_size, vector_length,
-                                        scratch_ptr, 0, 0);
-      m_functor(team);
+        typename Policy::member_type team(i ,
+                                          league_size, team_size, vector_length,
+                                          scratch_ptr, 0, 0);
+        m_functor(team);
       }
     }
   }
@@ -1032,8 +1033,9 @@ struct ParallelReduceSpecialize<FunctorType, TeamPolicyInternal<PolicyArgs...>,
     void* scratch_ptr = OpenMPTargetExec::get_scratch_ptr();
 
     ValueType result = ValueType();
-#pragma omp target teams distribute parallel for num_teams(nteams) num_threads(team_size*vector_length) \
-         map(to:f,scratch_ptr) map(tofrom:result) reduction(+: result) schedule(static,1)
+
+#pragma omp target teams distribute num_teams(nteams) thread_limit(team_size*vector_length) \
+         map(to:f,scratch_ptr) map(tofrom:result) reduction(+: result)
     for (int i = 0; i < league_size ; i++) {
 #pragma omp parallel
       {
@@ -1042,7 +1044,7 @@ struct ParallelReduceSpecialize<FunctorType, TeamPolicyInternal<PolicyArgs...>,
                                             vector_length, scratch_ptr, 0, 0);
       f(team, result);
       if (team.m_vector_lane != 0) result = 0;
-    }
+      }
     }
 
     *result_ptr = result;
@@ -1068,6 +1070,7 @@ struct ParallelReduceSpecialize<FunctorType, TeamPolicyInternal<PolicyArgs...>,
     OpenMPTargetExec::resize_scratch(
         0, PolicyType::member_type::TEAM_REDUCE_SIZE, 0, 0);
     void* scratch_ptr = OpenMPTargetExec::get_scratch_ptr();
+
 
     ValueType result = ValueType();
 #pragma omp target teams distribute parallel for num_teams(nteams) num_threads(team_size*vector_length) \
@@ -1199,19 +1202,21 @@ struct ThreadVectorRangeBoundariesStruct<iType, OpenMPTargetExecTeamMember> {
   typedef iType index_type;
   const index_type start;
   const index_type end;
-  const index_type increment;
+  const OpenMPTargetExecTeamMember& team ;
 
   inline ThreadVectorRangeBoundariesStruct(
-      const OpenMPTargetExecTeamMember& thread_, index_type count)
-      : start(thread_.m_vector_lane),
+      const OpenMPTargetExecTeamMember& team_in, index_type count)
+      : start(0),
         end(count),
-        increment(thread_.m_vector_length) {}
+        team(team_in)
+        {}
+
   inline ThreadVectorRangeBoundariesStruct(
-      const OpenMPTargetExecTeamMember& thread_, index_type begin_,
+      const OpenMPTargetExecTeamMember& team_in, index_type begin_,
       index_type end_)
-      : start(begin_ + thread_.m_vector_lane),
+      : start(begin_ ),
         end(end_),
-        increment(thread_.m_vector_length) {}
+        team(team_in) {}
 };
 
 template <typename iType>
