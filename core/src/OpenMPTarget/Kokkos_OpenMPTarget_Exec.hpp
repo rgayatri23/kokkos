@@ -623,6 +623,8 @@ KOKKOS_INLINE_FUNCTION void parallel_reduce(
 
   result = tmp_scratch[0];
 
+#pragma omp barrier
+
   // result =
   // loop_boundaries.thread.team_reduce(result,Impl::JoinAdd<ValueType>());
 }
@@ -684,19 +686,12 @@ KOKKOS_INLINE_FUNCTION void parallel_reduce(
     const Lambda& lambda, ValueType& result) {
   result = ValueType();
 
-  ValueType* tmp_scratch =
-      (ValueType*)loop_boundaries.team.impl_reduce_scratch();
-  //#pragma omp barrier
-  tmp_scratch[0] = ValueType();
-  //#pragma omp barrier
-
-#pragma omp simd reduction(+ : tmp_scratch[:1])
+#pragma omp simd reduction(+ : result)
   for (iType i = loop_boundaries.start; i < loop_boundaries.end; i += 1) {
     ValueType tmp = ValueType();
     lambda(i, tmp);
-    tmp_scratch[0] += tmp;
+    result += tmp;
   }
-  result += tmp_scratch[0];
 }
 
 /** \brief  Intra-thread vector parallel_reduce. Executes lambda(iType i,

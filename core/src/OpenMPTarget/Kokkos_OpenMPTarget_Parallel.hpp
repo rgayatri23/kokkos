@@ -1134,10 +1134,61 @@ class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
   const int m_shmem_size;
 
  public:
+//  inline void execute() const {
+//    // ParForSpecialize::execute(m_functor, m_policy, m_result_ptr);
+//  }
   inline void execute() const {
-    // ParForSpecialize::execute(m_functor, m_policy, m_result_ptr);
+    OpenMPTargetExec::verify_is_process(
+        "Kokkos::Experimental::OpenMPTarget parallel_for");
+    OpenMPTargetExec::verify_initialized(
+        "Kokkos::Experimental::OpenMPTarget parallel_for");
+    execute_impl<WorkTag>();
   }
 
+  private :
+    template <class TagType>
+    inline typename std::enable_if<std::is_same<TagType, void>::value>::type
+    execute_impl() const {
+
+    OpenMPTargetExec::verify_is_process(
+        "Kokkos::Experimental::OpenMPTarget parallel_for");
+    OpenMPTargetExec::verify_initialized(
+        "Kokkos::Experimental::OpenMPTarget parallel_for");
+    const int league_size   = m_policy.league_size();
+    const int team_size     = m_policy.team_size();
+    const int vector_length = m_policy.vector_length();
+    const int nteams        = OpenMPTargetExec::MAX_ACTIVE_TEAMS < league_size
+                           ? OpenMPTargetExec::MAX_ACTIVE_TEAMS
+                           : league_size;
+
+    OpenMPTargetExec::resize_scratch(0, Policy::member_type::TEAM_REDUCE_SIZE,
+                                     0, 0);
+
+    void* scratch_ptr = OpenMPTargetExec::get_scratch_ptr();
+    value_type result = value_type();
+
+    FunctorType a_functor(m_functor);
+
+#pragma omp target teams distribute \
+    map(to:a_functor, scratch_ptr) \
+    reduction(+: result) \
+    num_teams(nteams) thread_limit(team_size)
+    for(int i = 0; i < league_size; ++i)
+    {
+#pragma omp parallel
+      {
+        typename Policy::member_type team(i ,
+                                          league_size, team_size, vector_length,
+                                          scratch_ptr, 0, 0);
+        m_functor(team, result);
+      }
+    }
+
+    *m_result_ptr = result;
+    }
+
+
+ public:
   template <class ViewType>
   inline ParallelReduce(
       const FunctorType& arg_functor, const Policy& arg_policy,
