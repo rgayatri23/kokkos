@@ -55,10 +55,10 @@
 //----------------------------------------------------------------------------
 
 namespace Kokkos {
-//namespace Impl {
+// namespace Impl {
 //
-//template <class Reducer>
-//struct OpenMPTargetReducerWrapper {
+// template <class Reducer>
+// struct OpenMPTargetReducerWrapper {
 //  typedef typename Reducer::value_type value_type;
 //
 //// WORKAROUND OPENMPTARGET
@@ -88,8 +88,8 @@ namespace Kokkos {
 //#pragma omp end declare target
 //};
 //
-//template <class Scalar, class Space>
-//struct OpenMPTargetReducerWrapper<Sum<Scalar, Space>> {
+// template <class Scalar, class Space>
+// struct OpenMPTargetReducerWrapper<Sum<Scalar, Space>> {
 // public:
 //  // Required
 //  typedef typename std::remove_cv<Scalar>::type value_type;
@@ -103,7 +103,8 @@ namespace Kokkos {
 //  static void join(value_type& dest, const value_type& src) { dest += src; }
 //
 //  KOKKOS_INLINE_FUNCTION
-//  static void join(volatile value_type& dest, const volatile value_type& src) {
+//  static void join(volatile value_type& dest, const volatile value_type& src)
+//  {
 //    dest += src;
 //  }
 //
@@ -114,8 +115,8 @@ namespace Kokkos {
 //#pragma omp end declare target
 //};
 //
-//template <class Scalar, class Space>
-//struct OpenMPTargetReducerWrapper<Prod<Scalar, Space>> {
+// template <class Scalar, class Space>
+// struct OpenMPTargetReducerWrapper<Prod<Scalar, Space>> {
 // public:
 //  // Required
 //  typedef typename std::remove_cv<Scalar>::type value_type;
@@ -129,7 +130,8 @@ namespace Kokkos {
 //  static void join(value_type& dest, const value_type& src) { dest *= src; }
 //
 //  KOKKOS_INLINE_FUNCTION
-//  static void join(volatile value_type& dest, const volatile value_type& src) {
+//  static void join(volatile value_type& dest, const volatile value_type& src)
+//  {
 //    dest *= src;
 //  }
 //
@@ -140,8 +142,8 @@ namespace Kokkos {
 //#pragma omp end declare target
 //};
 //
-//template <class Scalar, class Space>
-//struct OpenMPTargetReducerWrapper<Min<Scalar, Space>> {
+// template <class Scalar, class Space>
+// struct OpenMPTargetReducerWrapper<Min<Scalar, Space>> {
 // public:
 //  // Required
 //  typedef typename std::remove_cv<Scalar>::type value_type;
@@ -157,7 +159,8 @@ namespace Kokkos {
 //  }
 //
 //  KOKKOS_INLINE_FUNCTION
-//  static void join(volatile value_type& dest, const volatile value_type& src) {
+//  static void join(volatile value_type& dest, const volatile value_type& src)
+//  {
 //    if (src < dest) dest = src;
 //  }
 //
@@ -168,8 +171,8 @@ namespace Kokkos {
 //#pragma omp end declare target
 //};
 //
-//template <class Scalar, class Space>
-//struct OpenMPTargetReducerWrapper<Max<Scalar, Space>> {
+// template <class Scalar, class Space>
+// struct OpenMPTargetReducerWrapper<Max<Scalar, Space>> {
 // public:
 //  // Required
 //  typedef typename std::remove_cv<Scalar>::type value_type;
@@ -185,7 +188,8 @@ namespace Kokkos {
 //  }
 //
 //  KOKKOS_INLINE_FUNCTION
-//  static void join(volatile value_type& dest, const volatile value_type& src) {
+//  static void join(volatile value_type& dest, const volatile value_type& src)
+//  {
 //    if (src > dest) dest = src;
 //  }
 //
@@ -197,8 +201,8 @@ namespace Kokkos {
 //#pragma omp end declare target
 //};
 //
-//template <class Scalar, class Space>
-//struct OpenMPTargetReducerWrapper<LAnd<Scalar, Space>> {
+// template <class Scalar, class Space>
+// struct OpenMPTargetReducerWrapper<LAnd<Scalar, Space>> {
 // public:
 //  // Required
 //  typedef typename std::remove_cv<Scalar>::type value_type;
@@ -213,7 +217,8 @@ namespace Kokkos {
 //  }
 //
 //  KOKKOS_INLINE_FUNCTION
-//  static void join(volatile value_type& dest, const volatile value_type& src) {
+//  static void join(volatile value_type& dest, const volatile value_type& src)
+//  {
 //    dest = dest && src;
 //  }
 //
@@ -224,8 +229,8 @@ namespace Kokkos {
 //#pragma omp end declare target
 //};
 //
-//template <class Scalar, class Space>
-//struct OpenMPTargetReducerWrapper<LOr<Scalar, Space>> {
+// template <class Scalar, class Space>
+// struct OpenMPTargetReducerWrapper<LOr<Scalar, Space>> {
 // public:
 //  // Required
 //  typedef typename std::remove_cv<Scalar>::type value_type;
@@ -243,7 +248,8 @@ namespace Kokkos {
 //  }
 //
 //  KOKKOS_INLINE_FUNCTION
-//  static void join(volatile value_type& dest, const volatile value_type& src) {
+//  static void join(volatile value_type& dest, const volatile value_type& src)
+//  {
 //    dest = dest || src;
 //  }
 //
@@ -254,8 +260,8 @@ namespace Kokkos {
 //#pragma omp end declare target
 //};
 //
-//template <class Scalar, class Space>
-//struct OpenMPTargetReducerWrapper<BAnd<Scalar, Space>> {
+// template <class Scalar, class Space>
+// struct OpenMPTargetReducerWrapper<BAnd<Scalar, Space>> {
 // public:
 //  // Required
 //  typedef typename std::remove_cv<Scalar>::type value_type;
@@ -271,7 +277,8 @@ namespace Kokkos {
 //  }
 //
 //  KOKKOS_INLINE_FUNCTION
-//  static void join(volatile value_type& dest, const volatile value_type& src) {
+//  static void join(volatile value_type& dest, const volatile value_type& src)
+//  {
 //    dest = dest & src;
 //  }
 //
@@ -282,8 +289,8 @@ namespace Kokkos {
 //#pragma omp end declare target
 //};
 //
-//template <class Scalar, class Space>
-//struct OpenMPTargetReducerWrapper<BOr<Scalar, Space>> {
+// template <class Scalar, class Space>
+// struct OpenMPTargetReducerWrapper<BOr<Scalar, Space>> {
 // public:
 //  // Required
 //  typedef typename std::remove_cv<Scalar>::type value_type;
@@ -299,7 +306,8 @@ namespace Kokkos {
 //  }
 //
 //  KOKKOS_INLINE_FUNCTION
-//  static void join(volatile value_type& dest, const volatile value_type& src) {
+//  static void join(volatile value_type& dest, const volatile value_type& src)
+//  {
 //    dest = dest | src;
 //  }
 //
@@ -310,8 +318,8 @@ namespace Kokkos {
 //#pragma omp end declare target
 //};
 //
-//template <class Scalar, class Index, class Space>
-//struct OpenMPTargetReducerWrapper<MinLoc<Scalar, Index, Space>> {
+// template <class Scalar, class Index, class Space>
+// struct OpenMPTargetReducerWrapper<MinLoc<Scalar, Index, Space>> {
 // private:
 //  typedef typename std::remove_cv<Scalar>::type scalar_type;
 //  typedef typename std::remove_cv<Index>::type index_type;
@@ -331,7 +339,8 @@ namespace Kokkos {
 //  }
 //
 //  KOKKOS_INLINE_FUNCTION
-//  static void join(volatile value_type& dest, const volatile value_type& src) {
+//  static void join(volatile value_type& dest, const volatile value_type& src)
+//  {
 //    if (src.val < dest.val) dest = src;
 //  }
 //
@@ -343,8 +352,8 @@ namespace Kokkos {
 //#pragma omp end declare target
 //};
 //
-//template <class Scalar, class Index, class Space>
-//struct OpenMPTargetReducerWrapper<MaxLoc<Scalar, Index, Space>> {
+// template <class Scalar, class Index, class Space>
+// struct OpenMPTargetReducerWrapper<MaxLoc<Scalar, Index, Space>> {
 // private:
 //  typedef typename std::remove_cv<Scalar>::type scalar_type;
 //  typedef typename std::remove_cv<Index>::type index_type;
@@ -363,7 +372,8 @@ namespace Kokkos {
 //  }
 //
 //  KOKKOS_INLINE_FUNCTION
-//  static void join(volatile value_type& dest, const volatile value_type& src) {
+//  static void join(volatile value_type& dest, const volatile value_type& src)
+//  {
 //    if (src.val > dest.val) dest = src;
 //  }
 //
@@ -375,8 +385,8 @@ namespace Kokkos {
 //#pragma omp end declare target
 //};
 //
-//template <class Scalar, class Space>
-//struct OpenMPTargetReducerWrapper<MinMax<Scalar, Space>> {
+// template <class Scalar, class Space>
+// struct OpenMPTargetReducerWrapper<MinMax<Scalar, Space>> {
 // private:
 //  typedef typename std::remove_cv<Scalar>::type scalar_type;
 //
@@ -400,7 +410,8 @@ namespace Kokkos {
 //  }
 //
 //  KOKKOS_INLINE_FUNCTION
-//  static void join(volatile value_type& dest, const volatile value_type& src) {
+//  static void join(volatile value_type& dest, const volatile value_type& src)
+//  {
 //    if (src.min_val < dest.min_val) {
 //      dest.min_val = src.min_val;
 //    }
@@ -417,8 +428,8 @@ namespace Kokkos {
 //#pragma omp end declare target
 //};
 //
-//template <class Scalar, class Index, class Space>
-//struct OpenMPTargetReducerWrapper<MinMaxLoc<Scalar, Index, Space>> {
+// template <class Scalar, class Index, class Space>
+// struct OpenMPTargetReducerWrapper<MinMaxLoc<Scalar, Index, Space>> {
 // private:
 //  typedef typename std::remove_cv<Scalar>::type scalar_type;
 //  typedef typename std::remove_cv<Index>::type index_type;
@@ -445,7 +456,8 @@ namespace Kokkos {
 //  }
 //
 //  KOKKOS_INLINE_FUNCTION
-//  static void join(volatile value_type& dest, const volatile value_type& src) {
+//  static void join(volatile value_type& dest, const volatile value_type& src)
+//  {
 //    if (src.min_val < dest.min_val) {
 //      dest.min_val = src.min_val;
 //      dest.min_loc = src.min_loc;
@@ -466,8 +478,8 @@ namespace Kokkos {
 //#pragma omp end declare target
 //};
 ///*
-//template<class ReducerType>
-//class OpenMPTargetReducerWrapper {
+// template<class ReducerType>
+// class OpenMPTargetReducerWrapper {
 //  public:
 //    const ReducerType& reducer;
 //    typedef typename ReducerType::value_type value_type;
