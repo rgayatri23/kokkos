@@ -64,7 +64,7 @@ namespace Kokkos {
 namespace Experimental {
 template <typename T>
 inline __device__ T *kokkos_impl_hip_shared_memory() {
-  extern __shared__ HIPSpace::size_type sh[];
+  HIP_DYNAMIC_SHARED(HIPSpace::size_type, sh);
   return (T *)sh;
 }
 }  // namespace Experimental
@@ -78,14 +78,15 @@ void *hip_resize_scratch_space(std::int64_t bytes, bool force_shrink = false);
 
 template <typename DriverType>
 __global__ static void hip_parallel_launch_constant_memory() {
-// cannot use global constants in HCC
-#ifdef __HCC__
-  __device__ __constant__ unsigned long kokkos_impl_hip_constant_memory_buffer
-      [Kokkos::Experimental::Impl::HIPTraits::ConstantMemoryUsage /
-       sizeof(unsigned long)];
-#endif
+  const DriverType &driver = *(reinterpret_cast<const DriverType *>(
+      kokkos_impl_hip_constant_memory_buffer));
+  driver();
+}
 
-  const DriverType *const driver = (reinterpret_cast<const DriverType *>(
+template <typename DriverType, unsigned int maxTperB, unsigned int minBperSM>
+__global__ __launch_bounds__(
+    maxTperB, minBperSM) static void hip_parallel_launch_constant_memory() {
+  const DriverType &driver = *(reinterpret_cast<const DriverType *>(
       kokkos_impl_hip_constant_memory_buffer));
 
   driver->operator()();
@@ -147,11 +148,6 @@ struct HIPParallelLaunch<
             "HIPParallelLaunch FAILED: shared memory request is too large");
       }
 
-      // Invoke the driver function on the device
-      printf("%i %i %i | %i %i %i | %i\n", grid.x, grid.y, grid.z, block.x,
-             block.y, block.z, shmem);
-      printf("Pre Launch Error: %s\n", hipGetErrorName(hipGetLastError()));
-
       // FIXME_HIP -- there is currently an error copying (some) structs
       // by value to the device in HIP-Clang / VDI
       // As a workaround, we can malloc the DriverType and explictly copy over.
@@ -165,23 +161,24 @@ struct HIPParallelLaunch<
                                        MinBlocksPerSM>
           <<<grid, block, shmem, hip_instance->m_stream>>>(d_driver);
 
-      Kokkos::Experimental::HIP().fence();
-      printf("Post Launch Error: %s\n", hipGetErrorName(hipGetLastError()));
-      HIP_SAFE_CALL(hipFree(d_driver));
 #if defined(KOKKOS_ENABLE_DEBUG_BOUNDS_CHECK)
       HIP_SAFE_CALL(hipGetLastError());
-      Kokkos::Experimental::HIP().fence();
+      hip_instance->fence();
 #endif
+      HIP_SAFE_CALL(hipFree(d_driver));
     }
   }
 
   static hipFuncAttributes get_hip_func_attributes() {
-    hipFuncAttributes attr;
-    hipFuncGetAttributes(
-        &attr,
-        reinterpret_cast<void const *>(
-            hip_parallel_launch_local_memory<DriverType, MaxThreadsPerBlock,
-                                             MinBlocksPerSM>));
+    static hipFuncAttributes attr = []() {
+      hipFuncAttributes attr;
+      HIP_SAFE_CALL(hipFuncGetAttributes(
+          &attr,
+          reinterpret_cast<void const *>(
+              hip_parallel_launch_local_memory<DriverType, MaxThreadsPerBlock,
+                                               MinBlocksPerSM>)));
+      return attr;
+    }();
     return attr;
   }
 };
@@ -210,20 +207,22 @@ struct HIPParallelLaunch<DriverType, Kokkos::LaunchBounds<0, 0>,
       hip_parallel_launch_local_memory<DriverType, 1024, 1>
           <<<grid, block, shmem, hip_instance->m_stream>>>(d_driver);
 
-      Kokkos::Experimental::HIP().fence();
-      HIP_SAFE_CALL(hipFree(d_driver));
 #if defined(KOKKOS_ENABLE_DEBUG_BOUNDS_CHECK)
       HIP_SAFE_CALL(hipGetLastError());
-      Kokkos::Experimental::HIP().fence();
+      hip_instance->fence();
 #endif
+      HIP_SAFE_CALL(hipFree(d_driver));
     }
   }
 
   static hipFuncAttributes get_hip_func_attributes() {
-    hipFuncAttributes attr;
-    hipFuncGetAttributes(
-        &attr, reinterpret_cast<void *>(
-                   &hip_parallel_launch_local_memory<DriverType, 1024, 1>));
+    static hipFuncAttributes attr = []() {
+      hipFuncAttributes attr;
+      HIP_SAFE_CALL(hipFuncGetAttributes(
+          &attr, reinterpret_cast<void const *>(
+                     hip_parallel_launch_local_memory<DriverType, 1024, 1>)));
+      return attr;
+    }();
     return attr;
   }
 };

@@ -166,8 +166,10 @@ class RawMemoryAllocationFailure : public std::bad_alloc {
 
 #if defined(KOKKOS_ENABLE_CUDA) && defined(__CUDA_ARCH__)
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(KOKKOS_ENABLE_DEBUG_BOUNDS_CHECK)
 // cuda_abort does not abort when building for macOS.
+// required to workaround failures in random number generator unit tests with
+// pre-volta architectures
 #define KOKKOS_IMPL_ABORT_NORETURN
 #else
 // cuda_abort aborts when building for other platforms than macOS
@@ -177,7 +179,7 @@ class RawMemoryAllocationFailure : public std::bad_alloc {
 #elif defined(KOKKOS_ENABLE_HIP) && defined(__HIP_DEVICE_COMPILE__)
 // HIP aborts
 #define KOKKOS_IMPL_ABORT_NORETURN [[noreturn]]
-#elif !defined(KOKKOS_ENABLE_OPENMPTARGET) && !defined(__HCC_ACCELERATOR__)
+#elif !defined(KOKKOS_ENABLE_OPENMPTARGET)
 // Host aborts
 #define KOKKOS_IMPL_ABORT_NORETURN [[noreturn]]
 #else
@@ -192,8 +194,10 @@ KOKKOS_IMPL_ABORT_NORETURN KOKKOS_INLINE_FUNCTION void abort(
   Kokkos::Impl::cuda_abort(message);
 #elif defined(KOKKOS_ENABLE_HIP) && defined(__HIP_DEVICE_COMPILE__)
   Kokkos::Impl::hip_abort(message);
-#elif !defined(KOKKOS_ENABLE_OPENMPTARGET) && !defined(__HCC_ACCELERATOR__)
+#elif !defined(KOKKOS_ENABLE_OPENMPTARGET)
   Kokkos::Impl::host_abort(message);
+#elif defined(KOKKOS_ENABLE_OPENMPTARGET)
+  (void)message;  // FIXME_OPENMPTARGET
 #endif
 }
 

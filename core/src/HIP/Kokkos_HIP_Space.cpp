@@ -92,25 +92,25 @@ DeepCopy<Kokkos::Experimental::HIPSpace, HostSpace,
 
 DeepCopy<Kokkos::Experimental::HIPSpace, Kokkos::Experimental::HIPSpace,
          Kokkos::Experimental::HIP>::DeepCopy(const Kokkos::Experimental::HIP&
-                                              /*instance*/,
+                                                  instance,
                                               void* dst, const void* src,
                                               size_t n) {
-  // FIXME_HIP use instance
-  HIP_SAFE_CALL(hipMemcpy(dst, src, n, hipMemcpyDefault));
+  HIP_SAFE_CALL(
+      hipMemcpyAsync(dst, src, n, hipMemcpyDefault, instance.hip_stream()));
 }
 
 DeepCopy<HostSpace, Kokkos::Experimental::HIPSpace, Kokkos::Experimental::HIP>::
-    DeepCopy(const Kokkos::Experimental::HIP& /*instance*/, void* dst,
+    DeepCopy(const Kokkos::Experimental::HIP& instance, void* dst,
              const void* src, size_t n) {
-  // FIXME_HIP use instance
-  HIP_SAFE_CALL(hipMemcpy(dst, src, n, hipMemcpyDefault));
+  HIP_SAFE_CALL(
+      hipMemcpyAsync(dst, src, n, hipMemcpyDefault, instance.hip_stream()));
 }
 
 DeepCopy<Kokkos::Experimental::HIPSpace, HostSpace, Kokkos::Experimental::HIP>::
-    DeepCopy(const Kokkos::Experimental::HIP& /*instance*/, void* dst,
+    DeepCopy(const Kokkos::Experimental::HIP& instance, void* dst,
              const void* src, size_t n) {
-  // FIXME_HIP use instance
-  HIP_SAFE_CALL(hipMemcpy(dst, src, n, hipMemcpyDefault));
+  HIP_SAFE_CALL(
+      hipMemcpyAsync(dst, src, n, hipMemcpyDefault, instance.hip_stream()));
 }
 
 DeepCopy<Kokkos::Experimental::HIPHostPinnedSpace,
@@ -134,34 +134,34 @@ DeepCopy<Kokkos::Experimental::HIPHostPinnedSpace, HostSpace,
 
 DeepCopy<Kokkos::Experimental::HIPHostPinnedSpace,
          Kokkos::Experimental::HIPHostPinnedSpace, Kokkos::Experimental::HIP>::
-    DeepCopy(const Kokkos::Experimental::HIP& /*instance*/, void* dst,
+    DeepCopy(const Kokkos::Experimental::HIP& instance, void* dst,
              const void* src, size_t n) {
-  // FIXME_HIP use instance
-  HIP_SAFE_CALL(hipMemcpy(dst, src, n, hipMemcpyDefault));
+  HIP_SAFE_CALL(
+      hipMemcpyAsync(dst, src, n, hipMemcpyDefault, instance.hip_stream()));
 }
 
 DeepCopy<HostSpace, Kokkos::Experimental::HIPHostPinnedSpace,
          Kokkos::Experimental::HIP>::DeepCopy(const Kokkos::Experimental::HIP&
-                                              /*instance*/,
+                                                  instance,
                                               void* dst, const void* src,
                                               size_t n) {
-  // FIXME_HIP use instance
-  HIP_SAFE_CALL(hipMemcpy(dst, src, n, hipMemcpyDefault));
+  HIP_SAFE_CALL(
+      hipMemcpyAsync(dst, src, n, hipMemcpyDefault, instance.hip_stream()));
 }
 
 DeepCopy<Kokkos::Experimental::HIPHostPinnedSpace, HostSpace,
          Kokkos::Experimental::HIP>::DeepCopy(const Kokkos::Experimental::HIP&
-                                              /*instance*/,
+                                                  instance,
                                               void* dst, const void* src,
                                               size_t n) {
-  // FIXME_HIP use instance
-  HIP_SAFE_CALL(hipMemcpy(dst, src, n, hipMemcpyDefault));
+  HIP_SAFE_CALL(
+      hipMemcpyAsync(dst, src, n, hipMemcpyDefault, instance.hip_stream()));
 }
 
 void DeepCopyAsyncHIP(void* dst, void const* src, size_t n) {
   hipStream_t s = get_deep_copy_stream();
   HIP_SAFE_CALL(hipMemcpyAsync(dst, src, n, hipMemcpyDefault, s));
-  hipStreamSynchronize(s);
+  HIP_SAFE_CALL(hipStreamSynchronize(s));
 }
 
 }  // namespace Impl
@@ -209,9 +209,9 @@ void* HIPSpace::allocate(
 
   auto const error_code = hipMalloc(&ptr, arg_alloc_size);
   if (error_code != hipSuccess) {
-    hipGetLastError();  // This is the only way to clear the last error, which
-                        // we should do here since we're turning it into an
-                        // exception here
+    // This is the only way to clear the last error, which we should do here
+    // since we're turning it into an exception here
+    (void)hipGetLastError();
     throw HIPRawMemoryAllocationFailure(
         arg_alloc_size, error_code,
         RawMemoryAllocationFailure::AllocationMechanism::HIPMalloc);
@@ -237,9 +237,9 @@ void* HIPHostPinnedSpace::allocate(const char* arg_label,
 
   auto const error_code = hipHostMalloc(&ptr, arg_alloc_size);
   if (error_code != hipSuccess) {
-    hipGetLastError();  // This is the only way to clear the last error, which
-                        // we should do here since we're turning it into an
-                        // exception here
+    // This is the only way to clear the last error, which we should do here
+    // since we're turning it into an exception here
+    (void)hipGetLastError();
     throw HIPRawMemoryAllocationFailure(
         arg_alloc_size, error_code,
         RawMemoryAllocationFailure::AllocationMechanism::HIPHostMalloc);
@@ -683,20 +683,73 @@ void HIP::impl_initialize(const HIP::SelectDevice config) {
 
 void HIP::impl_finalize() { Impl::HIPInternal::singleton().finalize(); }
 
-HIP::HIP() : m_space_instance(&Impl::HIPInternal::singleton()) {
+HIP::HIP()
+    : m_space_instance(&Impl::HIPInternal::singleton()), m_counter(nullptr) {
   Impl::HIPInternal::singleton().verify_is_initialized(
       "HIP instance constructor");
 }
 
-// HIP::HIP( const int instance_id )
-//  : m_device( Impl::HIPInternal::singleton().m_hipDev )
-//{}
+HIP::HIP(hipStream_t const stream)
+    : m_space_instance(new Impl::HIPInternal), m_counter(new int(1)) {
+  Impl::HIPInternal::singleton().verify_is_initialized(
+      "HIP instance constructor");
+  m_space_instance->initialize(Impl::HIPInternal::singleton().m_hipDev, stream);
+}
+
+KOKKOS_FUNCTION HIP::HIP(HIP&& other) noexcept {
+  m_space_instance       = other.m_space_instance;
+  other.m_space_instance = nullptr;
+  m_counter              = other.m_counter;
+  other.m_counter        = nullptr;
+}
+
+KOKKOS_FUNCTION HIP::HIP(HIP const& other)
+    : m_space_instance(other.m_space_instance), m_counter(other.m_counter) {
+#ifndef KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HIP_GPU
+  if (m_counter) Kokkos::atomic_add(m_counter, 1);
+#endif
+}
+
+KOKKOS_FUNCTION HIP& HIP::operator=(HIP&& other) noexcept {
+  m_space_instance       = other.m_space_instance;
+  other.m_space_instance = nullptr;
+  m_counter              = other.m_counter;
+  other.m_counter        = nullptr;
+
+  return *this;
+}
+
+KOKKOS_FUNCTION HIP& HIP::operator=(HIP const& other) {
+  m_space_instance = other.m_space_instance;
+  m_counter        = other.m_counter;
+#ifndef KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HIP_GPU
+  if (m_counter) Kokkos::atomic_add(m_counter, 1);
+#endif
+
+  return *this;
+}
+
+KOKKOS_FUNCTION HIP::~HIP() noexcept {
+#ifndef KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HIP_GPU
+  if (m_counter == nullptr) return;
+  int const count = Kokkos::atomic_fetch_sub(m_counter, 1);
+  if (count == 1) {
+    delete m_counter;
+    m_space_instance->finalize();
+    delete m_space_instance;
+  }
+#endif
+}
 
 void HIP::print_configuration(std::ostream& s, const bool) {
   Impl::HIPInternal::singleton().print_configuration(s);
 }
 
-void HIP::fence() const { HIP_SAFE_CALL(hipDeviceSynchronize()); }
+void HIP::impl_static_fence() { HIP_SAFE_CALL(hipDeviceSynchronize()); }
+
+void HIP::fence() const { m_space_instance->fence(); }
+
+hipStream_t HIP::hip_stream() const { return m_space_instance->m_stream; }
 
 int HIP::hip_device() const { return impl_internal_space_instance()->m_hipDev; }
 

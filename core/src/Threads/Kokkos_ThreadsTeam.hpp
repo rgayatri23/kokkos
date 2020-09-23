@@ -74,11 +74,11 @@ class ThreadsExecTeamMember {
   enum { TEAM_REDUCE_SIZE = 512 };
 
  public:
-  typedef Kokkos::Threads execution_space;
-  typedef execution_space::scratch_memory_space scratch_memory_space;
+  using execution_space      = Kokkos::Threads;
+  using scratch_memory_space = execution_space::scratch_memory_space;
 
  private:
-  typedef execution_space::scratch_memory_space space;
+  using space = execution_space::scratch_memory_space;
   ThreadsExec* const m_exec;
   ThreadsExec* const* m_team_base;  ///< Base for team fan-in
   space m_team_shared;
@@ -175,8 +175,8 @@ class ThreadsExecTeamMember {
     }
 #else
     // Make sure there is enough scratch space:
-    typedef typename if_c<sizeof(ValueType) < TEAM_REDUCE_SIZE, ValueType,
-                          void>::type type;
+    using type = typename if_c<sizeof(ValueType) < TEAM_REDUCE_SIZE, ValueType,
+                               void>::type;
 
     if (m_team_base) {
       type* const local_value = ((type*)m_team_base[0]->scratch_memory());
@@ -201,8 +201,8 @@ class ThreadsExecTeamMember {
     }
 #else
     // Make sure there is enough scratch space:
-    typedef typename if_c<sizeof(ValueType) < TEAM_REDUCE_SIZE, ValueType,
-                          void>::type type;
+    using type = typename if_c<sizeof(ValueType) < TEAM_REDUCE_SIZE, ValueType,
+                               void>::type;
     f(value);
     if (m_team_base) {
       type* const local_value = ((type*)m_team_base[0]->scratch_memory());
@@ -227,10 +227,10 @@ class ThreadsExecTeamMember {
 #else
   {
     // Make sure there is enough scratch space:
-    typedef
-        typename if_c<sizeof(Type) < TEAM_REDUCE_SIZE, Type, void>::type type;
+    using type =
+        typename if_c<sizeof(Type) < TEAM_REDUCE_SIZE, Type, void>::type;
 
-    if (0 == m_exec) return value;
+    if (nullptr == m_exec) return value;
 
     if (team_rank() != team_size() - 1)
       *((volatile type*)m_exec->scratch_memory()) = value;
@@ -270,12 +270,12 @@ class ThreadsExecTeamMember {
 #else
       team_reduce(const ReducerType& reducer,
                   const typename ReducerType::value_type contribution) const {
-    typedef typename ReducerType::value_type value_type;
+    using value_type = typename ReducerType::value_type;
     // Make sure there is enough scratch space:
-    typedef typename if_c<sizeof(value_type) < TEAM_REDUCE_SIZE, value_type,
-                          void>::type type;
+    using type = typename if_c<sizeof(value_type) < TEAM_REDUCE_SIZE,
+                               value_type, void>::type;
 
-    if (0 == m_exec) return;
+    if (nullptr == m_exec) return;
 
     type* const local_value = ((type*)m_exec->scratch_memory());
 
@@ -333,11 +333,10 @@ class ThreadsExecTeamMember {
 #else
   {
     // Make sure there is enough scratch space:
-    typedef
-        typename if_c<sizeof(ArgType) < TEAM_REDUCE_SIZE, ArgType, void>::type
-            type;
+    using type =
+        typename if_c<sizeof(ArgType) < TEAM_REDUCE_SIZE, ArgType, void>::type;
 
-    if (0 == m_exec) return type(0);
+    if (nullptr == m_exec) return type(0);
 
     volatile type* const work_value = ((type*)m_exec->scratch_memory());
 
@@ -386,7 +385,7 @@ class ThreadsExecTeamMember {
    */
   template <typename ArgType>
   KOKKOS_INLINE_FUNCTION ArgType team_scan(const ArgType& value) const {
-    return this->template team_scan<ArgType>(value, 0);
+    return this->template team_scan<ArgType>(value, nullptr);
   }
 
   //----------------------------------------
@@ -398,8 +397,8 @@ class ThreadsExecTeamMember {
       const TeamPolicyInternal<Kokkos::Threads, Properties...>& team,
       const int shared_size)
       : m_exec(exec),
-        m_team_base(0),
-        m_team_shared(0, 0),
+        m_team_base(nullptr),
+        m_team_shared(nullptr, 0),
         m_team_shared_size(shared_size),
         m_team_size(team.team_size()),
         m_team_rank(0),
@@ -479,9 +478,9 @@ class ThreadsExecTeamMember {
   }
 
   ThreadsExecTeamMember()
-      : m_exec(0),
-        m_team_base(0),
-        m_team_shared(0, 0),
+      : m_exec(nullptr),
+        m_team_base(nullptr),
+        m_team_shared(nullptr, 0),
         m_team_shared_size(0),
         m_team_size(1),
         m_team_rank(0),
@@ -608,26 +607,13 @@ class TeamPolicyInternal<Kokkos::Threads, Properties...>
  public:
   //! Tag this class as a kokkos execution policy
   //! Tag this class as a kokkos execution policy
-  typedef TeamPolicyInternal execution_policy;
+  using execution_policy = TeamPolicyInternal;
 
-  typedef PolicyTraits<Properties...> traits;
+  using traits = PolicyTraits<Properties...>;
 
   const typename traits::execution_space& space() const {
     static typename traits::execution_space m_space;
     return m_space;
-  }
-
-  TeamPolicyInternal& operator=(const TeamPolicyInternal& p) {
-    m_league_size            = p.m_league_size;
-    m_team_size              = p.m_team_size;
-    m_team_alloc             = p.m_team_alloc;
-    m_team_iter              = p.m_team_iter;
-    m_team_scratch_size[0]   = p.m_team_scratch_size[0];
-    m_thread_scratch_size[0] = p.m_thread_scratch_size[0];
-    m_team_scratch_size[1]   = p.m_team_scratch_size[1];
-    m_thread_scratch_size[1] = p.m_thread_scratch_size[1];
-    m_chunk_size             = p.m_chunk_size;
-    return *this;
   }
 
   template <class ExecSpace, class... OtherProperties>
@@ -817,7 +803,7 @@ class TeamPolicyInternal<Kokkos::Threads, Properties...>
   }
 
  public:
-  typedef Impl::ThreadsExecTeamMember member_type;
+  using member_type = Impl::ThreadsExecTeamMember;
 
   friend class Impl::ThreadsExecTeamMember;
 };
@@ -843,7 +829,7 @@ KOKKOS_INLINE_FUNCTION Impl::TeamThreadRangeBoundariesStruct<
     Impl::ThreadsExecTeamMember>
 TeamThreadRange(const Impl::ThreadsExecTeamMember& thread, const iType1& begin,
                 const iType2& end) {
-  typedef typename std::common_type<iType1, iType2>::type iType;
+  using iType = typename std::common_type<iType1, iType2>::type;
   return Impl::TeamThreadRangeBoundariesStruct<iType,
                                                Impl::ThreadsExecTeamMember>(
       thread, iType(begin), iType(end));
@@ -865,7 +851,7 @@ KOKKOS_INLINE_FUNCTION Impl::TeamThreadRangeBoundariesStruct<
     Impl::ThreadsExecTeamMember>
 TeamVectorRange(const Impl::ThreadsExecTeamMember& thread, const iType1& begin,
                 const iType2& end) {
-  typedef typename std::common_type<iType1, iType2>::type iType;
+  using iType = typename std::common_type<iType1, iType2>::type;
   return Impl::TeamThreadRangeBoundariesStruct<iType,
                                                Impl::ThreadsExecTeamMember>(
       thread, iType(begin), iType(end));
@@ -910,7 +896,7 @@ namespace Kokkos {
  * i=0..N-1.
  *
  * The range i=0..N-1 is mapped to all threads of the the calling thread team.
- * This functionality requires C++11 support.*/
+ */
 template <typename iType, class Lambda>
 KOKKOS_INLINE_FUNCTION void parallel_for(
     const Impl::TeamThreadRangeBoundariesStruct<
@@ -925,8 +911,8 @@ KOKKOS_INLINE_FUNCTION void parallel_for(
  * ValueType & val) for each i=0..N-1.
  *
  * The range i=0..N-1 is mapped to all threads of the the calling thread team
- * and a summation of val is performed and put into result. This functionality
- * requires C++11 support.*/
+ * and a summation of val is performed and put into result.
+ */
 template <typename iType, class Lambda, typename ValueType>
 KOKKOS_INLINE_FUNCTION
     typename std::enable_if<!Kokkos::is_reducer<ValueType>::value>::type
@@ -972,7 +958,7 @@ namespace Kokkos {
  * i=0..N-1.
  *
  * The range i=0..N-1 is mapped to all vector lanes of the the calling thread.
- * This functionality requires C++11 support.*/
+ */
 template <typename iType, class Lambda>
 KOKKOS_INLINE_FUNCTION void parallel_for(
     const Impl::ThreadVectorRangeBoundariesStruct<
@@ -990,8 +976,8 @@ KOKKOS_INLINE_FUNCTION void parallel_for(
  * ValueType & val) for each i=0..N-1.
  *
  * The range i=0..N-1 is mapped to all vector lanes of the the calling thread
- * and a summation of val is performed and put into result. This functionality
- * requires C++11 support.*/
+ * and a summation of val is performed and put into result.
+ */
 template <typename iType, class Lambda, typename ValueType>
 KOKKOS_INLINE_FUNCTION
     typename std::enable_if<!Kokkos::is_reducer<ValueType>::value>::type
@@ -1028,14 +1014,15 @@ KOKKOS_INLINE_FUNCTION
  * needs to be added to val no matter whether final==true or not. In a serial
  * execution (i.e. team_size==1) the operator is only called once with
  * final==true. Scan_val will be set to the final sum value over all vector
- * lanes. This functionality requires C++11 support.*/
+ * lanes.
+ */
 template <typename iType, class FunctorType>
 KOKKOS_INLINE_FUNCTION void parallel_scan(
     const Impl::ThreadVectorRangeBoundariesStruct<
         iType, Impl::ThreadsExecTeamMember>& loop_boundaries,
     const FunctorType& lambda) {
-  typedef Kokkos::Impl::FunctorValueTraits<FunctorType, void> ValueTraits;
-  typedef typename ValueTraits::value_type value_type;
+  using ValueTraits = Kokkos::Impl::FunctorValueTraits<FunctorType, void>;
+  using value_type  = typename ValueTraits::value_type;
 
   value_type scan_val = value_type();
 

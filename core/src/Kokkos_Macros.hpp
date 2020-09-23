@@ -97,10 +97,9 @@
 
 //----------------------------------------------------------------------------
 
-#if !defined(KOKKOS_ENABLE_THREADS) && !defined(KOKKOS_ENABLE_CUDA) &&      \
-    !defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_HPX) &&        \
-    !defined(KOKKOS_ENABLE_ROCM) && !defined(KOKKOS_ENABLE_OPENMPTARGET) && \
-    !defined(KOKKOS_ENABLE_HIP)
+#if !defined(KOKKOS_ENABLE_THREADS) && !defined(KOKKOS_ENABLE_CUDA) && \
+    !defined(KOKKOS_ENABLE_OPENMP) && !defined(KOKKOS_ENABLE_HPX) &&   \
+    !defined(KOKKOS_ENABLE_OPENMPTARGET) && !defined(KOKKOS_ENABLE_HIP)
 #define KOKKOS_INTERNAL_NOT_PARALLEL
 #endif
 
@@ -166,16 +165,14 @@
 
 #if defined(KOKKOS_ENABLE_HIP)
 
-// FIXME_HIP Not defining NDEBUG makes some tests fail.
-#ifndef NDEBUG
-#define NDEBUG
-#endif
-
 #define HIP_ENABLE_PRINTF
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 
 #define KOKKOS_LAMBDA [=] __host__ __device__
+#if defined(KOKKOS_ENABLE_CXX17) || defined(KOKKOS_ENABLE_CXX20)
+#define KOKKOS_CLASS_LAMBDA [ =, *this ] __host__ __device__
+#endif
 #endif  // #if defined(KOKKOS_ENABLE_HIP)
 
 //----------------------------------------------------------------------------
@@ -239,8 +236,8 @@
 #define KOKKOS_COMPILER_GNU \
   __GNUC__ * 100 + __GNUC_MINOR__ * 10 + __GNUC_PATCHLEVEL__
 
-#if (472 > KOKKOS_COMPILER_GNU)
-#error "Compiling with GCC version earlier than 4.7.2 is not supported."
+#if (530 > KOKKOS_COMPILER_GNU)
+#error "Compiling with GCC version earlier than 5.3.0 is not supported."
 #endif
 #endif
 
@@ -248,8 +245,8 @@
 #define KOKKOS_COMPILER_PGI \
   __PGIC__ * 100 + __PGIC_MINOR__ * 10 + __PGIC_PATCHLEVEL__
 
-#if (1540 > KOKKOS_COMPILER_PGI)
-#error "Compiling with PGI version earlier than 15.4 is not supported."
+#if (1740 > KOKKOS_COMPILER_PGI)
+#error "Compiling with PGI version earlier than 17.4 is not supported."
 #endif
 #endif
 
@@ -285,7 +282,6 @@
 #endif
 
 #if defined(KOKKOS_ENABLE_HIP)
-
 #define KOKKOS_IMPL_FORCEINLINE_FUNCTION __device__ __host__ __forceinline__
 #define KOKKOS_IMPL_INLINE_FUNCTION __device__ __host__ inline
 #define KOKKOS_DEFAULTED_FUNCTION __device__ __host__ inline
@@ -293,19 +289,7 @@
 #define KOKKOS_IMPL_FUNCTION __device__ __host__
 #define KOKKOS_IMPL_HOST_FUNCTION __host__
 #define KOKKOS_IMPL_DEVICE_FUNCTION __device__
-#if defined(KOKKOS_ENABLE_CXX17) || defined(KOKKOS_ENABLE_CXX20)
-#define KOKKOS_CLASS_LAMBDA [ =, *this ] __host__ __device__
-#endif
 #endif  // #if defined( KOKKOS_ENABLE_HIP )
-
-#if defined(KOKKOS_ENABLE_ROCM) && defined(__HCC__)
-
-#define KOKKOS_IMPL_FORCEINLINE_FUNCTION __attribute__((amp, cpu)) inline
-#define KOKKOS_IMPL_INLINE_FUNCTION __attribute__((amp, cpu)) inline
-#define KOKKOS_IMPL_FUNCTION __attribute__((amp, cpu))
-#define KOKKOS_LAMBDA [=] __attribute__((amp, cpu))
-#define KOKKOS_DEFAULTED_FUNCTION __attribute__((amp, cpu)) inline
-#endif
 
 #if defined(_OPENMP)
 //  Compiling with OpenMP.
@@ -325,9 +309,7 @@
 #define KOKKOS_ENABLE_PRAGMA_SIMD 1
 #endif
 
-#if (__INTEL_COMPILER > 1400)
 #define KOKKOS_ENABLE_PRAGMA_IVDEP 1
-#endif
 
 #if !defined(KOKKOS_MEMORY_ALIGNMENT)
 #define KOKKOS_MEMORY_ALIGNMENT 64
@@ -339,21 +321,15 @@
 #define KOKKOS_IMPL_ALIGN_PTR(size) __attribute__((align_value(size)))
 #endif
 
-#if (1400 > KOKKOS_COMPILER_INTEL)
-#if (1300 > KOKKOS_COMPILER_INTEL)
-#error \
-    "Compiling with Intel version earlier than 13.0 is not supported. Official minimal version is 14.0."
-#else
-#warning \
-    "Compiling with Intel version 13.x probably works but is not officially supported. Official minimal version is 14.0."
-#endif
+#if (1700 > KOKKOS_COMPILER_INTEL)
+#error "Compiling with Intel version earlier than 17.0 is not supported."
 #endif
 
 #if !defined(KOKKOS_ENABLE_ASM) && !defined(_WIN32)
 #define KOKKOS_ENABLE_ASM 1
 #endif
 
-#if !defined(KOKKOS_FORCEINLINE_FUNCTION)
+#if !defined(KOKKOS_IMPL_FORCEINLINE_FUNCTION)
 #if !defined(_WIN32)
 #define KOKKOS_IMPL_FORCEINLINE_FUNCTION inline __attribute__((always_inline))
 #define KOKKOS_IMPL_FORCEINLINE __attribute__((always_inline))
@@ -547,7 +523,6 @@
 
 #if 1 < ((defined(KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_CUDA) ? 1 : 0) +         \
          (defined(KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_HIP) ? 1 : 0) +          \
-         (defined(KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_ROCM) ? 1 : 0) +         \
          (defined(KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_OPENMPTARGET) ? 1 : 0) + \
          (defined(KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_OPENMP) ? 1 : 0) +       \
          (defined(KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_THREADS) ? 1 : 0) +      \
@@ -557,10 +532,9 @@
 #endif
 
 // If default is not specified then chose from enabled execution spaces.
-// Priority: CUDA, HIP, ROCM, OPENMPTARGET, OPENMP, THREADS, HPX, SERIAL
+// Priority: CUDA, HIP, OPENMPTARGET, OPENMP, THREADS, HPX, SERIAL
 #if defined(KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_CUDA)
 #elif defined(KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_HIP)
-#elif defined(KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_ROCM)
 #elif defined(KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_OPENMPTARGET)
 #elif defined(KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_OPENMP)
 #elif defined(KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_THREADS)
@@ -575,8 +549,6 @@
 // as valid overload criteria
 #define KOKKOS_IMPL_ENABLE_OVERLOAD_HOST_DEVICE
 #endif
-#elif defined(KOKKOS_ENABLE_ROCM)
-#define KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_ROCM
 #elif defined(KOKKOS_ENABLE_OPENMPTARGET)
 #define KOKKOS_ENABLE_DEFAULT_DEVICE_TYPE_OPENMPTARGET
 #elif defined(KOKKOS_ENABLE_OPENMP)
@@ -594,9 +566,6 @@
 
 #if defined(__CUDACC__) && defined(__CUDA_ARCH__) && defined(KOKKOS_ENABLE_CUDA)
 #define KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_CUDA
-#elif defined(__HCC__) && defined(__HCC_ACCELERATOR__) && \
-    defined(KOKKOS_ENABLE_ROCM)
-#define KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_ROCM_GPU
 #elif defined(__HIPCC__) && defined(__HIP_DEVICE_COMPILE__) && \
     defined(KOKKOS_ENABLE_HIP)
 #define KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HIP_GPU

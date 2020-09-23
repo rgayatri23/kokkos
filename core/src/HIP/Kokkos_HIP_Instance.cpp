@@ -97,8 +97,6 @@ const HIPInternalDevices &HIPInternalDevices::singleton() {
 
 namespace Impl {
 
-int HIPInternal::was_initialized = 0;
-int HIPInternal::was_finalized   = 0;
 //----------------------------------------------------------------------------
 
 void HIPInternal::print_configuration(std::ostream &s) const {
@@ -145,6 +143,7 @@ HIPInternal::~HIPInternal() {
   m_scratchSpace            = 0;
   m_scratchFlags            = 0;
   m_scratchConcurrentBitset = nullptr;
+  m_stream                  = 0;
 }
 
 int HIPInternal::verify_is_initialized(const char *const label) const {
@@ -163,13 +162,17 @@ HIPInternal &HIPInternal::singleton() {
   return *self;
 }
 
-void HIPInternal::initialize(int hip_device_id) {
+void HIPInternal::fence() const {
+  HIP_SAFE_CALL(hipStreamSynchronize(m_stream));
+}
+
+void HIPInternal::initialize(int hip_device_id, hipStream_t stream) {
   if (was_finalized)
     Kokkos::abort("Calling HIP::initialize after HIP::finalize is illegal\n");
 
   if (is_initialized()) return;
 
-  enum { WordSize = sizeof(size_type) };
+  int constexpr WordSize = sizeof(size_type);
 
   if (!HostSpace::execution_space::impl_is_initialized()) {
     const std::string msg(
@@ -192,10 +195,9 @@ void HIPInternal::initialize(int hip_device_id) {
     m_hipDev     = hip_device_id;
     m_deviceProp = hipProp;
 
-    hipSetDevice(m_hipDev);
+    HIP_SAFE_CALL(hipSetDevice(m_hipDev));
 
-    // FIXME_HIP for now always uses default stream
-    m_stream = 0;
+    m_stream = stream;
 
     // number of multiprocessors
     m_multiProcCount = hipProp.multiProcessorCount;
@@ -214,14 +216,19 @@ void HIPInternal::initialize(int hip_device_id) {
     m_maxBlock = hipProp.maxGridSize[0];
 
     // theoretically, we can get 40 WF's / CU, but only can sustain 32
+    // see
+    // https://github.com/ROCm-Developer-Tools/HIP/blob/a0b5dfd625d99af7e288629747b40dd057183173/vdi/hip_platform.cpp#L742
     m_maxBlocksPerSM = 32;
     // FIXME_HIP - Nick to implement this upstream
-    m_regsPerSM          = 262144 / 32;
-    m_shmemPerSM         = hipProp.maxSharedMemoryPerMultiProcessor;
-    m_maxShmemPerBlock   = hipProp.sharedMemPerBlock;
-    m_maxThreadsPerSM    = m_maxBlocksPerSM * HIPTraits::WarpSize;
-    m_maxThreadsPerBlock = hipProp.maxThreadsPerBlock;
-
+    //             Register count comes from Sec. 2.2. "Data Sharing" of the
+    //             Vega 7nm ISA document (see the diagram)
+    //             https://developer.amd.com/wp-content/resources/Vega_7nm_Shader_ISA.pdf
+    //             VGPRS = 4 (SIMD/CU) * 256 VGPR/SIMD * 64 registers / VGPR =
+    //             65536 VGPR/CU
+    m_regsPerSM        = 65536;
+    m_shmemPerSM       = hipProp.maxSharedMemoryPerMultiProcessor;
+    m_maxShmemPerBlock = hipProp.sharedMemPerBlock;
+    m_maxThreadsPerSM  = m_maxBlocksPerSM * HIPTraits::WarpSize;
     //----------------------------------
     // Multiblock reduction uses scratch flags for counters
     // and scratch space for partial reduction values.
@@ -281,8 +288,8 @@ void HIPInternal::initialize(int hip_device_id) {
 
 //----------------------------------------------------------------------------
 
-typedef Kokkos::Experimental::HIP::size_type
-    ScratchGrain[Impl::HIPTraits::WarpSize];
+using ScratchGrain =
+    Kokkos::Experimental::HIP::size_type[Impl::HIPTraits::WarpSize];
 enum { sizeScratchGrain = sizeof(ScratchGrain) };
 
 Kokkos::Experimental::HIP::size_type *HIPInternal::scratch_space(
@@ -291,9 +298,9 @@ Kokkos::Experimental::HIP::size_type *HIPInternal::scratch_space(
       m_scratchSpaceCount * sizeScratchGrain < size) {
     m_scratchSpaceCount = (size + sizeScratchGrain - 1) / sizeScratchGrain;
 
-    typedef Kokkos::Impl::SharedAllocationRecord<Kokkos::Experimental::HIPSpace,
-                                                 void>
-        Record;
+    using Record =
+        Kokkos::Impl::SharedAllocationRecord<Kokkos::Experimental::HIPSpace,
+                                             void>;
 
     static Record *const r = Record::allocate(
         Kokkos::Experimental::HIPSpace(), "InternalScratchSpace",
@@ -313,9 +320,9 @@ Kokkos::Experimental::HIP::size_type *HIPInternal::scratch_flags(
       m_scratchFlagsCount * sizeScratchGrain < size) {
     m_scratchFlagsCount = (size + sizeScratchGrain - 1) / sizeScratchGrain;
 
-    typedef Kokkos::Impl::SharedAllocationRecord<Kokkos::Experimental::HIPSpace,
-                                                 void>
-        Record;
+    using Record =
+        Kokkos::Impl::SharedAllocationRecord<Kokkos::Experimental::HIPSpace,
+                                             void>;
 
     Record *const r = Record::allocate(
         Kokkos::Experimental::HIPSpace(), "InternalScratchFlags",
@@ -325,7 +332,8 @@ Kokkos::Experimental::HIP::size_type *HIPInternal::scratch_flags(
 
     m_scratchFlags = reinterpret_cast<size_type *>(r->data());
 
-    hipMemset(m_scratchFlags, 0, m_scratchFlagsCount * sizeScratchGrain);
+    HIP_SAFE_CALL(
+        hipMemset(m_scratchFlags, 0, m_scratchFlagsCount * sizeScratchGrain));
   }
 
   return m_scratchFlags;
@@ -335,7 +343,7 @@ Kokkos::Experimental::HIP::size_type *HIPInternal::scratch_flags(
 
 void HIPInternal::finalize() {
   HIP().fence();
-  was_finalized = 1;
+  was_finalized = true;
   if (0 != m_scratchSpace || 0 != m_scratchFlags) {
     using RecordHIP =
         Kokkos::Impl::SharedAllocationRecord<Kokkos::Experimental::HIPSpace>;
@@ -356,6 +364,7 @@ void HIPInternal::finalize() {
     m_scratchSpace            = 0;
     m_scratchFlags            = 0;
     m_scratchConcurrentBitset = nullptr;
+    m_stream                  = 0;
   }
 }
 

@@ -39,6 +39,9 @@ IF(COMMAND TRIBITS_PACKAGE_DECL)
 ELSE()
   SET(KOKKOS_HAS_TRILINOS OFF)
 ENDIF()
+# Is this build a subdirectory of another project
+GET_DIRECTORY_PROPERTY(HAS_PARENT PARENT_DIRECTORY)
+
 
 INCLUDE(${KOKKOS_SRC_PATH}/cmake/kokkos_functions.cmake)
 INCLUDE(${KOKKOS_SRC_PATH}/cmake/kokkos_pick_cxx_std.cmake)
@@ -80,9 +83,11 @@ IF(NOT KOKKOS_HAS_TRILINOS)
       SET(CMAKE_CXX_COMPILER ${SPACK_CXX} CACHE STRING "the C++ compiler" FORCE)
       SET(ENV{CXX} ${SPACK_CXX})
     ENDIF()
-  ENDif()
-  IF(NOT DEFINED PROJECT_NAME)
-    PROJECT(Kokkos CXX)
+  ENDIF()
+  # Always call the project command to define Kokkos_ variables
+  # and to make sure that C++ is an enabled language
+  PROJECT(Kokkos CXX)
+  IF(NOT HAS_PARENT)
     IF (NOT CMAKE_BUILD_TYPE)
       SET(DEFAULT_BUILD_TYPE "RelWithDebInfo")
       MESSAGE(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified.")
@@ -106,8 +111,8 @@ ENDIF()
 
 
 set(Kokkos_VERSION_MAJOR 3)
-set(Kokkos_VERSION_MINOR 1)
-set(Kokkos_VERSION_PATCH 1)
+set(Kokkos_VERSION_MINOR 2)
+set(Kokkos_VERSION_PATCH 0)
 set(Kokkos_VERSION "${Kokkos_VERSION_MAJOR}.${Kokkos_VERSION_MINOR}.${Kokkos_VERSION_PATCH}")
 math(EXPR KOKKOS_VERSION "${Kokkos_VERSION_MAJOR} * 10000 + ${Kokkos_VERSION_MINOR} * 100 + ${Kokkos_VERSION_PATCH}")
 
@@ -174,7 +179,6 @@ SET(KOKKOS_EXT_LIBRARIES Kokkos::kokkos Kokkos::kokkoscore Kokkos::kokkoscontain
 SET(KOKKOS_INT_LIBRARIES kokkos kokkoscore kokkoscontainers kokkosalgorithms)
 SET_PROPERTY(GLOBAL PROPERTY KOKKOS_INT_LIBRARIES ${KOKKOS_INT_LIBRARIES})
 
-GET_DIRECTORY_PROPERTY(HAS_PARENT PARENT_DIRECTORY)
 IF (KOKKOS_HAS_TRILINOS)
   SET(TRILINOS_INCDIR ${CMAKE_INSTALL_PREFIX}/${${PROJECT_NAME}_INSTALL_INCLUDE_DIR})
   SET(KOKKOS_HEADER_DIR ${TRILINOS_INCDIR})
@@ -203,7 +207,9 @@ IF (KOKKOS_HAS_TRILINOS)
   # we have to match the annoying behavior
   STRING(REPLACE ";" " " KOKKOSCORE_COMPILE_OPTIONS "${KOKKOS_COMPILE_OPTIONS}")
   LIST(APPEND KOKKOS_ALL_COMPILE_OPTIONS ${KOKKOS_COMPILE_OPTIONS})
-  LIST(APPEND KOKKOS_ALL_COMPILE_OPTIONS ${KOKKOS_CUDA_OPTIONS})
+  IF (KOKKOS_ENABLE_CUDA)
+    LIST(APPEND KOKKOS_ALL_COMPILE_OPTIONS ${KOKKOS_CUDA_OPTIONS})
+  ENDIF()
   FOREACH(XCOMP_FLAG ${KOKKOS_XCOMPILER_OPTIONS})
     SET(KOKKOSCORE_XCOMPILER_OPTIONS "${KOKKOSCORE_XCOMPILER_OPTIONS} -Xcompiler ${XCOMP_FLAG}")
     LIST(APPEND KOKKOS_ALL_COMPILE_OPTIONS -Xcompiler ${XCOMP_FLAG})
@@ -251,7 +257,7 @@ KOKKOS_PACKAGE_POSTPROCESS()
 #We are ready to configure the header
 CONFIGURE_FILE(cmake/KokkosCore_config.h.in KokkosCore_config.h @ONLY)
 
-IF (NOT KOKKOS_HAS_TRILINOS)
+IF (NOT KOKKOS_HAS_TRILINOS AND NOT Kokkos_INSTALL_TESTING)
   ADD_LIBRARY(kokkos INTERFACE)
   #Make sure in-tree projects can reference this as Kokkos::
   #to match the installed target names

@@ -55,8 +55,8 @@ namespace Impl {
 
 template <typename Scalar, class Device>
 struct test_vector_insert {
-  typedef Scalar scalar_type;
-  typedef Device execution_space;
+  using scalar_type     = Scalar;
+  using execution_space = Device;
 
   template <typename Vector>
   void run_test(Vector& a) {
@@ -78,7 +78,7 @@ struct test_vector_insert {
 // Looks like some std::vector implementations do not have the restriction
 // right on the overload taking three iterators, and thus the following call
 // will hit that overload and then fail to compile.
-#if defined(KOKKOS_COMPILER_INTEL) && (1700 > KOKKOS_COMPILER_INTEL)
+#if defined(KOKKOS_COMPILER_INTEL)
 // And at least GCC 4.8.4 doesn't implement vector insert correct for C++11
 // Return type is void ...
 #if (__GNUC__ < 5)
@@ -104,7 +104,7 @@ struct test_vector_insert {
 // Looks like some std::vector implementations do not have the restriction
 // right on the overload taking three iterators, and thus the following call
 // will hit that overload and then fail to compile.
-#if defined(KOKKOS_COMPILER_INTEL) && (1700 > KOKKOS_COMPILER_INTEL)
+#if defined(KOKKOS_COMPILER_INTEL)
     b.insert(b.begin(), typename Vector::size_type(7), 9);
 #else
     b.insert(b.begin(), 7, 9);
@@ -125,7 +125,7 @@ struct test_vector_insert {
 
     // Testing insert at end via all three function interfaces
     a.insert(a.end(), 11);
-#if defined(KOKKOS_COMPILER_INTEL) && (1700 > KOKKOS_COMPILER_INTEL)
+#if defined(KOKKOS_COMPILER_INTEL)
     a.insert(a.end(), typename Vector::size_type(2), 12);
 #else
     a.insert(a.end(), 2, 12);
@@ -177,10 +177,10 @@ struct test_vector_insert {
 
 template <typename Scalar, class Device>
 struct test_vector_allocate {
-  typedef test_vector_allocate<Scalar, Device> self_type;
+  using self_type = test_vector_allocate<Scalar, Device>;
 
-  typedef Scalar scalar_type;
-  typedef Device execution_space;
+  using scalar_type     = Scalar;
+  using execution_space = Device;
 
   bool result = false;
 
@@ -208,10 +208,10 @@ struct test_vector_allocate {
 
 template <typename Scalar, class Device>
 struct test_vector_combinations {
-  typedef test_vector_combinations<Scalar, Device> self_type;
+  using self_type = test_vector_combinations<Scalar, Device>;
 
-  typedef Scalar scalar_type;
-  typedef Device execution_space;
+  using scalar_type     = Scalar;
+  using execution_space = Device;
 
   Scalar reference;
   Scalar result;

@@ -82,9 +82,9 @@ class TeamPolicyInternal<Kokkos::Cuda, Properties...>
     : public PolicyTraits<Properties...> {
  public:
   //! Tag this class as a kokkos execution policy
-  typedef TeamPolicyInternal execution_policy;
+  using execution_policy = TeamPolicyInternal;
 
-  typedef PolicyTraits<Properties...> traits;
+  using traits = PolicyTraits<Properties...>;
 
   template <class ExecSpace, class... OtherProperties>
   friend class TeamPolicyInternal;
@@ -102,7 +102,7 @@ class TeamPolicyInternal<Kokkos::Cuda, Properties...>
 
  public:
   //! Execution space of this execution policy
-  typedef Kokkos::Cuda execution_space;
+  using execution_space = Kokkos::Cuda;
 
   template <class... OtherProperties>
   TeamPolicyInternal(const TeamPolicyInternal<OtherProperties...>& p) {
@@ -117,25 +117,12 @@ class TeamPolicyInternal<Kokkos::Cuda, Properties...>
     m_space                  = p.m_space;
   }
 
-  TeamPolicyInternal& operator=(const TeamPolicyInternal& p) {
-    m_league_size            = p.m_league_size;
-    m_team_size              = p.m_team_size;
-    m_vector_length          = p.m_vector_length;
-    m_team_scratch_size[0]   = p.m_team_scratch_size[0];
-    m_team_scratch_size[1]   = p.m_team_scratch_size[1];
-    m_thread_scratch_size[0] = p.m_thread_scratch_size[0];
-    m_thread_scratch_size[1] = p.m_thread_scratch_size[1];
-    m_chunk_size             = p.m_chunk_size;
-    m_space                  = p.m_space;
-    return *this;
-  }
-
   //----------------------------------------
 
   template <class FunctorType>
   int team_size_max(const FunctorType& f, const ParallelForTag&) const {
-    typedef Impl::ParallelFor<FunctorType, TeamPolicy<Properties...>>
-        closure_type;
+    using closure_type =
+        Impl::ParallelFor<FunctorType, TeamPolicy<Properties...>>;
     cudaFuncAttributes attr =
         CudaParallelLaunch<closure_type, typename traits::launch_bounds>::
             get_cuda_func_attributes();
@@ -152,15 +139,15 @@ class TeamPolicyInternal<Kokkos::Cuda, Properties...>
   template <class FunctorType>
   inline int team_size_max(const FunctorType& f,
                            const ParallelReduceTag&) const {
-    typedef Impl::FunctorAnalysis<Impl::FunctorPatternInterface::REDUCE,
-                                  TeamPolicyInternal, FunctorType>
-        functor_analysis_type;
-    typedef typename Impl::ParallelReduceReturnValue<
+    using functor_analysis_type =
+        Impl::FunctorAnalysis<Impl::FunctorPatternInterface::REDUCE,
+                              TeamPolicyInternal, FunctorType>;
+    using reducer_type = typename Impl::ParallelReduceReturnValue<
         void, typename functor_analysis_type::value_type,
-        FunctorType>::reducer_type reducer_type;
-    typedef Impl::ParallelReduce<FunctorType, TeamPolicy<Properties...>,
-                                 reducer_type>
-        closure_type;
+        FunctorType>::reducer_type;
+    using closure_type =
+        Impl::ParallelReduce<FunctorType, TeamPolicy<Properties...>,
+                             reducer_type>;
     return internal_team_size_max<closure_type>(f);
   }
 
@@ -175,8 +162,8 @@ class TeamPolicyInternal<Kokkos::Cuda, Properties...>
 
   template <class FunctorType>
   int team_size_recommended(const FunctorType& f, const ParallelForTag&) const {
-    typedef Impl::ParallelFor<FunctorType, TeamPolicy<Properties...>>
-        closure_type;
+    using closure_type =
+        Impl::ParallelFor<FunctorType, TeamPolicy<Properties...>>;
     cudaFuncAttributes attr =
         CudaParallelLaunch<closure_type, typename traits::launch_bounds>::
             get_cuda_func_attributes();
@@ -193,24 +180,24 @@ class TeamPolicyInternal<Kokkos::Cuda, Properties...>
   template <class FunctorType>
   inline int team_size_recommended(const FunctorType& f,
                                    const ParallelReduceTag&) const {
-    typedef Impl::FunctorAnalysis<Impl::FunctorPatternInterface::REDUCE,
-                                  TeamPolicyInternal, FunctorType>
-        functor_analysis_type;
-    typedef typename Impl::ParallelReduceReturnValue<
+    using functor_analysis_type =
+        Impl::FunctorAnalysis<Impl::FunctorPatternInterface::REDUCE,
+                              TeamPolicyInternal, FunctorType>;
+    using reducer_type = typename Impl::ParallelReduceReturnValue<
         void, typename functor_analysis_type::value_type,
-        FunctorType>::reducer_type reducer_type;
-    typedef Impl::ParallelReduce<FunctorType, TeamPolicy<Properties...>,
-                                 reducer_type>
-        closure_type;
+        FunctorType>::reducer_type;
+    using closure_type =
+        Impl::ParallelReduce<FunctorType, TeamPolicy<Properties...>,
+                             reducer_type>;
     return internal_team_size_recommended<closure_type>(f);
   }
 
   template <class FunctorType, class ReducerType>
   int team_size_recommended(const FunctorType& f, const ReducerType&,
                             const ParallelReduceTag&) const {
-    typedef Impl::ParallelReduce<FunctorType, TeamPolicy<Properties...>,
-                                 ReducerType>
-        closure_type;
+    using closure_type =
+        Impl::ParallelReduce<FunctorType, TeamPolicy<Properties...>,
+                             ReducerType>;
     return internal_team_size_recommended<closure_type>(f);
   }
 
@@ -392,7 +379,7 @@ class TeamPolicyInternal<Kokkos::Cuda, Properties...>
     return *this;
   }
 
-  typedef Kokkos::Impl::CudaTeamMember member_type;
+  using member_type = Kokkos::Impl::CudaTeamMember;
 
  protected:
   template <class ClosureType, class FunctorType, class BlockSizeCallable>
@@ -451,12 +438,12 @@ namespace Impl {
 template <class FunctorType, class... Traits>
 class ParallelFor<FunctorType, Kokkos::RangePolicy<Traits...>, Kokkos::Cuda> {
  public:
-  typedef Kokkos::RangePolicy<Traits...> Policy;
+  using Policy = Kokkos::RangePolicy<Traits...>;
 
  private:
-  typedef typename Policy::member_type Member;
-  typedef typename Policy::work_tag WorkTag;
-  typedef typename Policy::launch_bounds LaunchBounds;
+  using Member       = typename Policy::member_type;
+  using WorkTag      = typename Policy::work_tag;
+  using LaunchBounds = typename Policy::launch_bounds;
 
   const FunctorType m_functor;
   const Policy m_policy;
@@ -479,7 +466,7 @@ class ParallelFor<FunctorType, Kokkos::RangePolicy<Traits...>, Kokkos::Cuda> {
   }
 
  public:
-  typedef FunctorType functor_type;
+  using functor_type = FunctorType;
 
   inline __device__ void operator()(void) const {
     const Member work_stride = blockDim.y * gridDim.x;
@@ -531,13 +518,13 @@ class ParallelFor<FunctorType, Kokkos::RangePolicy<Traits...>, Kokkos::Cuda> {
 template <class FunctorType, class... Traits>
 class ParallelFor<FunctorType, Kokkos::MDRangePolicy<Traits...>, Kokkos::Cuda> {
  public:
-  typedef Kokkos::MDRangePolicy<Traits...> Policy;
+  using Policy = Kokkos::MDRangePolicy<Traits...>;
 
  private:
-  using RP = Policy;
-  typedef typename Policy::array_index_type array_index_type;
-  typedef typename Policy::index_type index_type;
-  typedef typename Policy::launch_bounds LaunchBounds;
+  using RP               = Policy;
+  using array_index_type = typename Policy::array_index_type;
+  using index_type       = typename Policy::index_type;
+  using LaunchBounds     = typename Policy::launch_bounds;
 
   const FunctorType m_functor;
   const Policy m_rp;
@@ -649,16 +636,16 @@ template <class FunctorType, class... Properties>
 class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
                   Kokkos::Cuda> {
  public:
-  typedef TeamPolicyInternal<Kokkos::Cuda, Properties...> Policy;
+  using Policy = TeamPolicyInternal<Kokkos::Cuda, Properties...>;
 
  private:
-  typedef typename Policy::member_type Member;
-  typedef typename Policy::work_tag WorkTag;
-  typedef typename Policy::launch_bounds LaunchBounds;
+  using Member       = typename Policy::member_type;
+  using WorkTag      = typename Policy::work_tag;
+  using LaunchBounds = typename Policy::launch_bounds;
 
  public:
-  typedef FunctorType functor_type;
-  typedef Cuda::size_type size_type;
+  using functor_type = FunctorType;
+  using size_type    = Cuda::size_type;
 
  private:
   // Algorithmic constraints: blockDim.y is a power of two AND blockDim.y ==
@@ -788,10 +775,12 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
     m_scratch_ptr[1] =
         m_team_size <= 0
             ? nullptr
-            : cuda_resize_scratch_space(
-                  static_cast<ptrdiff_t>(m_scratch_size[1]) *
-                  static_cast<ptrdiff_t>(Cuda::concurrency() /
-                                         (m_team_size * m_vector_size)));
+            : m_policy.space()
+                  .impl_internal_space_instance()
+                  ->resize_team_scratch_space(
+                      static_cast<ptrdiff_t>(m_scratch_size[1]) *
+                      static_cast<ptrdiff_t>(Cuda::concurrency() /
+                                             (m_team_size * m_vector_size)));
 
     const int shmem_size_total = m_shmem_begin + m_shmem_size;
     if (m_policy.space().impl_internal_space_instance()->m_maxShmemPerBlock <
@@ -830,34 +819,34 @@ template <class FunctorType, class ReducerType, class... Traits>
 class ParallelReduce<FunctorType, Kokkos::RangePolicy<Traits...>, ReducerType,
                      Kokkos::Cuda> {
  public:
-  typedef Kokkos::RangePolicy<Traits...> Policy;
+  using Policy = Kokkos::RangePolicy<Traits...>;
 
  private:
-  typedef typename Policy::WorkRange WorkRange;
-  typedef typename Policy::work_tag WorkTag;
-  typedef typename Policy::member_type Member;
-  typedef typename Policy::launch_bounds LaunchBounds;
+  using WorkRange    = typename Policy::WorkRange;
+  using WorkTag      = typename Policy::work_tag;
+  using Member       = typename Policy::member_type;
+  using LaunchBounds = typename Policy::launch_bounds;
 
-  typedef Kokkos::Impl::if_c<std::is_same<InvalidType, ReducerType>::value,
-                             FunctorType, ReducerType>
-      ReducerConditional;
-  typedef typename ReducerConditional::type ReducerTypeFwd;
-  typedef
+  using ReducerConditional =
+      Kokkos::Impl::if_c<std::is_same<InvalidType, ReducerType>::value,
+                         FunctorType, ReducerType>;
+  using ReducerTypeFwd = typename ReducerConditional::type;
+  using WorkTagFwd =
       typename Kokkos::Impl::if_c<std::is_same<InvalidType, ReducerType>::value,
-                                  WorkTag, void>::type WorkTagFwd;
+                                  WorkTag, void>::type;
 
-  typedef Kokkos::Impl::FunctorValueTraits<ReducerTypeFwd, WorkTagFwd>
-      ValueTraits;
-  typedef Kokkos::Impl::FunctorValueInit<ReducerTypeFwd, WorkTagFwd> ValueInit;
-  typedef Kokkos::Impl::FunctorValueJoin<ReducerTypeFwd, WorkTagFwd> ValueJoin;
+  using ValueTraits =
+      Kokkos::Impl::FunctorValueTraits<ReducerTypeFwd, WorkTagFwd>;
+  using ValueInit = Kokkos::Impl::FunctorValueInit<ReducerTypeFwd, WorkTagFwd>;
+  using ValueJoin = Kokkos::Impl::FunctorValueJoin<ReducerTypeFwd, WorkTagFwd>;
 
  public:
-  typedef typename ValueTraits::pointer_type pointer_type;
-  typedef typename ValueTraits::value_type value_type;
-  typedef typename ValueTraits::reference_type reference_type;
-  typedef FunctorType functor_type;
-  typedef Kokkos::Cuda::size_type size_type;
-  typedef typename Policy::index_type index_type;
+  using pointer_type   = typename ValueTraits::pointer_type;
+  using value_type     = typename ValueTraits::value_type;
+  using reference_type = typename ValueTraits::reference_type;
+  using functor_type   = FunctorType;
+  using size_type      = Kokkos::Cuda::size_type;
+  using index_type     = typename Policy::index_type;
 
   // Algorithmic constraints: blockSize is a power of two AND blockDim.y ==
   // blockDim.z == 1
@@ -867,6 +856,7 @@ class ParallelReduce<FunctorType, Kokkos::RangePolicy<Traits...>, ReducerType,
   const ReducerType m_reducer;
   const pointer_type m_result_ptr;
   const bool m_result_ptr_device_accessible;
+  const bool m_result_ptr_host_accessible;
   size_type* m_scratch_space;
   size_type* m_scratch_flags;
   size_type* m_unified_space;
@@ -879,8 +869,8 @@ class ParallelReduce<FunctorType, Kokkos::RangePolicy<Traits...>, ReducerType,
       //};
       // Some crutch to do function overloading
  private:
-  typedef double DummyShflReductionType;
-  typedef int DummySHMEMReductionType;
+  using DummyShflReductionType  = double;
+  using DummySHMEMReductionType = int;
 
  public:
   // Make the exec_range calls call to Reduce::DeviceIterateTile
@@ -933,10 +923,17 @@ class ParallelReduce<FunctorType, Kokkos::RangePolicy<Traits...>, ReducerType,
     }
 
     // Reduce with final value at blockDim.y - 1 location.
-    if (cuda_single_inter_block_reduce_scan<false, ReducerTypeFwd, WorkTagFwd>(
-            ReducerConditional::select(m_functor, m_reducer), blockIdx.x,
-            gridDim.x, kokkos_impl_cuda_shared_memory<size_type>(),
-            m_scratch_space, m_scratch_flags)) {
+    // Shortcut for length zero reduction
+    bool do_final_reduction = m_policy.begin() == m_policy.end();
+    if (!do_final_reduction)
+      do_final_reduction =
+          cuda_single_inter_block_reduce_scan<false, ReducerTypeFwd,
+                                              WorkTagFwd>(
+              ReducerConditional::select(m_functor, m_reducer), blockIdx.x,
+              gridDim.x, kokkos_impl_cuda_shared_memory<size_type>(),
+              m_scratch_space, m_scratch_flags);
+
+    if (do_final_reduction) {
       // This is the final block with the final result at the final threads'
       // location
 
@@ -1034,9 +1031,14 @@ class ParallelReduce<FunctorType, Kokkos::RangePolicy<Traits...>, ReducerType,
   }
 
   inline void execute() {
-    const index_type nwork = m_policy.end() - m_policy.begin();
-    if (nwork) {
+    const index_type nwork     = m_policy.end() - m_policy.begin();
+    const bool need_device_set = ReduceFunctorHasInit<FunctorType>::value ||
+                                 ReduceFunctorHasFinal<FunctorType>::value ||
+                                 !m_result_ptr_host_accessible ||
+                                 !std::is_same<ReducerType, InvalidType>::value;
+    if ((nwork > 0) || need_device_set) {
       const int block_size = local_block_size(m_functor);
+
       KOKKOS_ASSERT(block_size > 0);
 
       m_scratch_space = cuda_internal_scratch_space(
@@ -1062,12 +1064,14 @@ class ParallelReduce<FunctorType, Kokkos::RangePolicy<Traits...>, ReducerType,
                                                           WorkTag>(m_functor,
                                                                    block.y);
 
+      if ((nwork == 0)
 #ifdef KOKKOS_IMPL_DEBUG_CUDA_SERIAL_EXECUTION
-      if (Kokkos::Impl::CudaInternal::cuda_use_serial_execution()) {
+          || Kokkos::Impl::CudaInternal::cuda_use_serial_execution()
+#endif
+      ) {
         block = dim3(1, 1, 1);
         grid  = dim3(1, 1, 1);
       }
-#endif
 
       CudaParallelLaunch<ParallelReduce, LaunchBounds>(
           *this, grid, block, shmem,
@@ -1075,7 +1079,7 @@ class ParallelReduce<FunctorType, Kokkos::RangePolicy<Traits...>, ReducerType,
           false);  // copy to device and execute
 
       if (!m_result_ptr_device_accessible) {
-        Cuda().fence();
+        m_policy.space().fence();
 
         if (m_result_ptr) {
           if (m_unified_space) {
@@ -1111,9 +1115,12 @@ class ParallelReduce<FunctorType, Kokkos::RangePolicy<Traits...>, ReducerType,
         m_result_ptr_device_accessible(
             MemorySpaceAccess<Kokkos::CudaSpace,
                               typename ViewType::memory_space>::accessible),
-        m_scratch_space(0),
-        m_scratch_flags(0),
-        m_unified_space(0) {}
+        m_result_ptr_host_accessible(
+            MemorySpaceAccess<Kokkos::HostSpace,
+                              typename ViewType::memory_space>::accessible),
+        m_scratch_space(nullptr),
+        m_scratch_flags(nullptr),
+        m_unified_space(nullptr) {}
 
   ParallelReduce(const FunctorType& arg_functor, const Policy& arg_policy,
                  const ReducerType& reducer)
@@ -1125,9 +1132,13 @@ class ParallelReduce<FunctorType, Kokkos::RangePolicy<Traits...>, ReducerType,
             MemorySpaceAccess<Kokkos::CudaSpace,
                               typename ReducerType::result_view_type::
                                   memory_space>::accessible),
-        m_scratch_space(0),
-        m_scratch_flags(0),
-        m_unified_space(0) {}
+        m_result_ptr_host_accessible(
+            MemorySpaceAccess<Kokkos::HostSpace,
+                              typename ReducerType::result_view_type::
+                                  memory_space>::accessible),
+        m_scratch_space(nullptr),
+        m_scratch_flags(nullptr),
+        m_unified_space(nullptr) {}
 };
 
 // MDRangePolicy impl
@@ -1135,35 +1146,35 @@ template <class FunctorType, class ReducerType, class... Traits>
 class ParallelReduce<FunctorType, Kokkos::MDRangePolicy<Traits...>, ReducerType,
                      Kokkos::Cuda> {
  public:
-  typedef Kokkos::MDRangePolicy<Traits...> Policy;
+  using Policy = Kokkos::MDRangePolicy<Traits...>;
 
  private:
-  typedef typename Policy::array_index_type array_index_type;
-  typedef typename Policy::index_type index_type;
+  using array_index_type = typename Policy::array_index_type;
+  using index_type       = typename Policy::index_type;
 
-  typedef typename Policy::work_tag WorkTag;
-  typedef typename Policy::member_type Member;
-  typedef typename Policy::launch_bounds LaunchBounds;
+  using WorkTag      = typename Policy::work_tag;
+  using Member       = typename Policy::member_type;
+  using LaunchBounds = typename Policy::launch_bounds;
 
-  typedef Kokkos::Impl::if_c<std::is_same<InvalidType, ReducerType>::value,
-                             FunctorType, ReducerType>
-      ReducerConditional;
-  typedef typename ReducerConditional::type ReducerTypeFwd;
-  typedef
+  using ReducerConditional =
+      Kokkos::Impl::if_c<std::is_same<InvalidType, ReducerType>::value,
+                         FunctorType, ReducerType>;
+  using ReducerTypeFwd = typename ReducerConditional::type;
+  using WorkTagFwd =
       typename Kokkos::Impl::if_c<std::is_same<InvalidType, ReducerType>::value,
-                                  WorkTag, void>::type WorkTagFwd;
+                                  WorkTag, void>::type;
 
-  typedef Kokkos::Impl::FunctorValueTraits<ReducerTypeFwd, WorkTagFwd>
-      ValueTraits;
-  typedef Kokkos::Impl::FunctorValueInit<ReducerTypeFwd, WorkTagFwd> ValueInit;
-  typedef Kokkos::Impl::FunctorValueJoin<ReducerTypeFwd, WorkTagFwd> ValueJoin;
+  using ValueTraits =
+      Kokkos::Impl::FunctorValueTraits<ReducerTypeFwd, WorkTagFwd>;
+  using ValueInit = Kokkos::Impl::FunctorValueInit<ReducerTypeFwd, WorkTagFwd>;
+  using ValueJoin = Kokkos::Impl::FunctorValueJoin<ReducerTypeFwd, WorkTagFwd>;
 
  public:
-  typedef typename ValueTraits::pointer_type pointer_type;
-  typedef typename ValueTraits::value_type value_type;
-  typedef typename ValueTraits::reference_type reference_type;
-  typedef FunctorType functor_type;
-  typedef Cuda::size_type size_type;
+  using pointer_type   = typename ValueTraits::pointer_type;
+  using value_type     = typename ValueTraits::value_type;
+  using reference_type = typename ValueTraits::reference_type;
+  using functor_type   = FunctorType;
+  using size_type      = Cuda::size_type;
 
   // Algorithmic constraints: blockSize is a power of two AND blockDim.y ==
   // blockDim.z == 1
@@ -1177,21 +1188,18 @@ class ParallelReduce<FunctorType, Kokkos::MDRangePolicy<Traits...>, ReducerType,
   size_type* m_scratch_flags;
   size_type* m_unified_space;
 
-  typedef typename Kokkos::Impl::Reduce::DeviceIterateTile<
+  using DeviceIteratePattern = typename Kokkos::Impl::Reduce::DeviceIterateTile<
       Policy::rank, Policy, FunctorType, typename Policy::work_tag,
-      reference_type>
-      DeviceIteratePattern;
+      reference_type>;
 
   // Shall we use the shfl based reduction or not (only use it for static sized
   // types of more than 128bit
-  enum {
-    UseShflReduction = ((sizeof(value_type) > 2 * sizeof(double)) &&
-                        (ValueTraits::StaticValueSize != 0))
-  };
+  static constexpr bool UseShflReduction = false;
+  //((sizeof(value_type)>2*sizeof(double)) && ValueTraits::StaticValueSize)
   // Some crutch to do function overloading
  private:
-  typedef double DummyShflReductionType;
-  typedef int DummySHMEMReductionType;
+  using DummyShflReductionType  = double;
+  using DummySHMEMReductionType = int;
 
  public:
   inline __device__ void exec_range(reference_type update) const {
@@ -1409,9 +1417,9 @@ class ParallelReduce<FunctorType, Kokkos::MDRangePolicy<Traits...>, ReducerType,
         m_result_ptr_device_accessible(
             MemorySpaceAccess<Kokkos::CudaSpace,
                               typename ViewType::memory_space>::accessible),
-        m_scratch_space(0),
-        m_scratch_flags(0),
-        m_unified_space(0) {}
+        m_scratch_space(nullptr),
+        m_scratch_flags(nullptr),
+        m_unified_space(nullptr) {}
 
   ParallelReduce(const FunctorType& arg_functor, const Policy& arg_policy,
                  const ReducerType& reducer)
@@ -1423,9 +1431,9 @@ class ParallelReduce<FunctorType, Kokkos::MDRangePolicy<Traits...>, ReducerType,
             MemorySpaceAccess<Kokkos::CudaSpace,
                               typename ReducerType::result_view_type::
                                   memory_space>::accessible),
-        m_scratch_space(0),
-        m_scratch_flags(0),
-        m_unified_space(0) {}
+        m_scratch_space(nullptr),
+        m_scratch_flags(nullptr),
+        m_unified_space(nullptr) {}
 };
 
 //----------------------------------------------------------------------------
@@ -1434,39 +1442,39 @@ template <class FunctorType, class ReducerType, class... Properties>
 class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
                      ReducerType, Kokkos::Cuda> {
  public:
-  typedef TeamPolicyInternal<Kokkos::Cuda, Properties...> Policy;
+  using Policy = TeamPolicyInternal<Kokkos::Cuda, Properties...>;
 
  private:
-  typedef typename Policy::member_type Member;
-  typedef typename Policy::work_tag WorkTag;
-  typedef typename Policy::launch_bounds LaunchBounds;
+  using Member       = typename Policy::member_type;
+  using WorkTag      = typename Policy::work_tag;
+  using LaunchBounds = typename Policy::launch_bounds;
 
-  typedef Kokkos::Impl::if_c<std::is_same<InvalidType, ReducerType>::value,
-                             FunctorType, ReducerType>
-      ReducerConditional;
-  typedef typename ReducerConditional::type ReducerTypeFwd;
-  typedef
+  using ReducerConditional =
+      Kokkos::Impl::if_c<std::is_same<InvalidType, ReducerType>::value,
+                         FunctorType, ReducerType>;
+  using ReducerTypeFwd = typename ReducerConditional::type;
+  using WorkTagFwd =
       typename Kokkos::Impl::if_c<std::is_same<InvalidType, ReducerType>::value,
-                                  WorkTag, void>::type WorkTagFwd;
+                                  WorkTag, void>::type;
 
-  typedef Kokkos::Impl::FunctorValueTraits<ReducerTypeFwd, WorkTagFwd>
-      ValueTraits;
-  typedef Kokkos::Impl::FunctorValueInit<ReducerTypeFwd, WorkTagFwd> ValueInit;
-  typedef Kokkos::Impl::FunctorValueJoin<ReducerTypeFwd, WorkTagFwd> ValueJoin;
+  using ValueTraits =
+      Kokkos::Impl::FunctorValueTraits<ReducerTypeFwd, WorkTagFwd>;
+  using ValueInit = Kokkos::Impl::FunctorValueInit<ReducerTypeFwd, WorkTagFwd>;
+  using ValueJoin = Kokkos::Impl::FunctorValueJoin<ReducerTypeFwd, WorkTagFwd>;
 
-  typedef typename ValueTraits::pointer_type pointer_type;
-  typedef typename ValueTraits::reference_type reference_type;
-  typedef typename ValueTraits::value_type value_type;
+  using pointer_type   = typename ValueTraits::pointer_type;
+  using reference_type = typename ValueTraits::reference_type;
+  using value_type     = typename ValueTraits::value_type;
 
  public:
-  typedef FunctorType functor_type;
-  typedef Cuda::size_type size_type;
+  using functor_type = FunctorType;
+  using size_type    = Cuda::size_type;
 
   enum { UseShflReduction = (true && (ValueTraits::StaticValueSize != 0)) };
 
  private:
-  typedef double DummyShflReductionType;
-  typedef int DummySHMEMReductionType;
+  using DummyShflReductionType  = double;
+  using DummySHMEMReductionType = int;
 
   // Algorithmic constraints: blockDim.y is a power of two AND blockDim.y ==
   // blockDim.z == 1 shared memory utilization:
@@ -1481,6 +1489,7 @@ class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
   const ReducerType m_reducer;
   const pointer_type m_result_ptr;
   const bool m_result_ptr_device_accessible;
+  const bool m_result_ptr_host_accessible;
   size_type* m_scratch_space;
   size_type* m_scratch_flags;
   size_type* m_unified_space;
@@ -1575,10 +1584,14 @@ class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
     }
 
     // Reduce with final value at blockDim.y - 1 location.
-    if (cuda_single_inter_block_reduce_scan<false, FunctorType, WorkTag>(
-            ReducerConditional::select(m_functor, m_reducer), blockIdx.x,
-            gridDim.x, kokkos_impl_cuda_shared_memory<size_type>(),
-            m_scratch_space, m_scratch_flags)) {
+    bool do_final_reduce = (m_league_size == 0);
+    if (!do_final_reduce)
+      do_final_reduce =
+          cuda_single_inter_block_reduce_scan<false, FunctorType, WorkTag>(
+              ReducerConditional::select(m_functor, m_reducer), blockIdx.x,
+              gridDim.x, kokkos_impl_cuda_shared_memory<size_type>(),
+              m_scratch_space, m_scratch_flags);
+    if (do_final_reduce) {
       // This is the final block with the final result at the final threads'
       // location
 
@@ -1631,7 +1644,13 @@ class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
 
     value_type init;
     ValueInit::init(ReducerConditional::select(m_functor, m_reducer), &init);
-    if (Impl::cuda_inter_block_reduction<FunctorType, ValueJoin, WorkTag>(
+
+    if (int_league_size == 0) {
+      Kokkos::Impl::FunctorFinal<ReducerTypeFwd, WorkTagFwd>::final(
+          ReducerConditional::select(m_functor, m_reducer), (void*)&value);
+      *result = value;
+    } else if (
+        Impl::cuda_inter_block_reduction<FunctorType, ValueJoin, WorkTag>(
             value, init,
             ValueJoin(ReducerConditional::select(m_functor, m_reducer)),
             m_scratch_space, result, m_scratch_flags, blockDim.y)
@@ -1651,8 +1670,12 @@ class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
   }
 
   inline void execute() {
-    const int nwork = m_league_size * m_team_size;
-    if (nwork) {
+    const int nwork            = m_league_size * m_team_size;
+    const bool need_device_set = ReduceFunctorHasInit<FunctorType>::value ||
+                                 ReduceFunctorHasFinal<FunctorType>::value ||
+                                 !m_result_ptr_host_accessible ||
+                                 !std::is_same<ReducerType, InvalidType>::value;
+    if ((nwork > 0) || need_device_set) {
       const int block_count =
           UseShflReduction ? std::min(m_league_size, size_type(1024 * 32))
                            : std::min(int(m_league_size), m_team_size);
@@ -1671,12 +1694,14 @@ class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
       dim3 grid(block_count, 1, 1);
       const int shmem_size_total = m_team_begin + m_shmem_begin + m_shmem_size;
 
+      if ((nwork == 0)
 #ifdef KOKKOS_IMPL_DEBUG_CUDA_SERIAL_EXECUTION
-      if (Kokkos::Impl::CudaInternal::cuda_use_serial_execution()) {
+          || Kokkos::Impl::CudaInternal::cuda_use_serial_execution()
+#endif
+      ) {
         block = dim3(1, 1, 1);
         grid  = dim3(1, 1, 1);
       }
-#endif
 
       CudaParallelLaunch<ParallelReduce, LaunchBounds>(
           *this, grid, block, shmem_size_total,
@@ -1684,7 +1709,7 @@ class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
           true);  // copy to device and execute
 
       if (!m_result_ptr_device_accessible) {
-        Cuda().fence();
+        m_policy.space().fence();
 
         if (m_result_ptr) {
           if (m_unified_space) {
@@ -1720,9 +1745,12 @@ class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
         m_result_ptr_device_accessible(
             MemorySpaceAccess<Kokkos::CudaSpace,
                               typename ViewType::memory_space>::accessible),
-        m_scratch_space(0),
-        m_scratch_flags(0),
-        m_unified_space(0),
+        m_result_ptr_host_accessible(
+            MemorySpaceAccess<Kokkos::HostSpace,
+                              typename ViewType::memory_space>::accessible),
+        m_scratch_space(nullptr),
+        m_scratch_flags(nullptr),
+        m_unified_space(nullptr),
         m_team_begin(0),
         m_shmem_begin(0),
         m_shmem_size(0),
@@ -1742,13 +1770,6 @@ class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
                   m_policy.thread_scratch_size(0)) /
                   m_vector_size;
 
-    // Return Init value if the number of worksets is zero
-    if (m_league_size * m_team_size == 0) {
-      ValueInit::init(ReducerConditional::select(m_functor, m_reducer),
-                      arg_result.data());
-      return;
-    }
-
     m_team_begin =
         UseShflReduction
             ? 0
@@ -1764,10 +1785,13 @@ class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
     m_scratch_ptr[1] =
         m_team_size <= 0
             ? nullptr
-            : cuda_resize_scratch_space(
-                  static_cast<std::int64_t>(m_scratch_size[1]) *
-                  (static_cast<std::int64_t>(Cuda::concurrency() /
-                                             (m_team_size * m_vector_size))));
+            : m_policy.space()
+                  .impl_internal_space_instance()
+                  ->resize_team_scratch_space(
+                      static_cast<std::int64_t>(m_scratch_size[1]) *
+                      (static_cast<std::int64_t>(
+                          Cuda::concurrency() /
+                          (m_team_size * m_vector_size))));
 
     // The global parallel_reduce does not support vector_length other than 1 at
     // the moment
@@ -1819,9 +1843,13 @@ class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
             MemorySpaceAccess<Kokkos::CudaSpace,
                               typename ReducerType::result_view_type::
                                   memory_space>::accessible),
-        m_scratch_space(0),
-        m_scratch_flags(0),
-        m_unified_space(0),
+        m_result_ptr_host_accessible(
+            MemorySpaceAccess<Kokkos::HostSpace,
+                              typename ReducerType::result_view_type::
+                                  memory_space>::accessible),
+        m_scratch_space(nullptr),
+        m_scratch_flags(nullptr),
+        m_unified_space(nullptr),
         m_team_begin(0),
         m_shmem_begin(0),
         m_shmem_size(0),
@@ -1841,13 +1869,6 @@ class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
                   m_policy.thread_scratch_size(0)) /
                   m_vector_size;
 
-    // Return Init value if the number of worksets is zero
-    if (arg_policy.league_size() == 0) {
-      ValueInit::init(ReducerConditional::select(m_functor, m_reducer),
-                      m_result_ptr);
-      return;
-    }
-
     m_team_begin =
         UseShflReduction
             ? 0
@@ -1863,10 +1884,12 @@ class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
     m_scratch_ptr[1] =
         m_team_size <= 0
             ? nullptr
-            : cuda_resize_scratch_space(
-                  static_cast<ptrdiff_t>(m_scratch_size[1]) *
-                  static_cast<ptrdiff_t>(Cuda::concurrency() /
-                                         (m_team_size * m_vector_size)));
+            : m_policy.space()
+                  .impl_internal_space_instance()
+                  ->resize_team_scratch_space(
+                      static_cast<ptrdiff_t>(m_scratch_size[1]) *
+                      static_cast<ptrdiff_t>(Cuda::concurrency() /
+                                             (m_team_size * m_vector_size)));
 
     // The global parallel_reduce does not support vector_length other than 1 at
     // the moment
@@ -1915,23 +1938,23 @@ namespace Impl {
 template <class FunctorType, class... Traits>
 class ParallelScan<FunctorType, Kokkos::RangePolicy<Traits...>, Kokkos::Cuda> {
  public:
-  typedef Kokkos::RangePolicy<Traits...> Policy;
+  using Policy = Kokkos::RangePolicy<Traits...>;
 
  private:
-  typedef typename Policy::member_type Member;
-  typedef typename Policy::work_tag WorkTag;
-  typedef typename Policy::WorkRange WorkRange;
-  typedef typename Policy::launch_bounds LaunchBounds;
+  using Member       = typename Policy::member_type;
+  using WorkTag      = typename Policy::work_tag;
+  using WorkRange    = typename Policy::WorkRange;
+  using LaunchBounds = typename Policy::launch_bounds;
 
-  typedef Kokkos::Impl::FunctorValueTraits<FunctorType, WorkTag> ValueTraits;
-  typedef Kokkos::Impl::FunctorValueInit<FunctorType, WorkTag> ValueInit;
-  typedef Kokkos::Impl::FunctorValueOps<FunctorType, WorkTag> ValueOps;
+  using ValueTraits = Kokkos::Impl::FunctorValueTraits<FunctorType, WorkTag>;
+  using ValueInit   = Kokkos::Impl::FunctorValueInit<FunctorType, WorkTag>;
+  using ValueOps    = Kokkos::Impl::FunctorValueOps<FunctorType, WorkTag>;
 
  public:
-  typedef typename ValueTraits::pointer_type pointer_type;
-  typedef typename ValueTraits::reference_type reference_type;
-  typedef FunctorType functor_type;
-  typedef Cuda::size_type size_type;
+  using pointer_type   = typename ValueTraits::pointer_type;
+  using reference_type = typename ValueTraits::reference_type;
+  using functor_type   = FunctorType;
+  using size_type      = Cuda::size_type;
 
  private:
   // Algorithmic constraints:
@@ -2186,8 +2209,8 @@ class ParallelScan<FunctorType, Kokkos::RangePolicy<Traits...>, Kokkos::Cuda> {
   ParallelScan(const FunctorType& arg_functor, const Policy& arg_policy)
       : m_functor(arg_functor),
         m_policy(arg_policy),
-        m_scratch_space(0),
-        m_scratch_flags(0),
+        m_scratch_space(nullptr),
+        m_scratch_flags(nullptr),
         m_final(false)
 #ifdef KOKKOS_IMPL_DEBUG_CUDA_SERIAL_EXECUTION
         ,
@@ -2202,23 +2225,23 @@ template <class FunctorType, class ReturnType, class... Traits>
 class ParallelScanWithTotal<FunctorType, Kokkos::RangePolicy<Traits...>,
                             ReturnType, Kokkos::Cuda> {
  public:
-  typedef Kokkos::RangePolicy<Traits...> Policy;
+  using Policy = Kokkos::RangePolicy<Traits...>;
 
  private:
-  typedef typename Policy::member_type Member;
-  typedef typename Policy::work_tag WorkTag;
-  typedef typename Policy::WorkRange WorkRange;
-  typedef typename Policy::launch_bounds LaunchBounds;
+  using Member       = typename Policy::member_type;
+  using WorkTag      = typename Policy::work_tag;
+  using WorkRange    = typename Policy::WorkRange;
+  using LaunchBounds = typename Policy::launch_bounds;
 
-  typedef Kokkos::Impl::FunctorValueTraits<FunctorType, WorkTag> ValueTraits;
-  typedef Kokkos::Impl::FunctorValueInit<FunctorType, WorkTag> ValueInit;
-  typedef Kokkos::Impl::FunctorValueOps<FunctorType, WorkTag> ValueOps;
+  using ValueTraits = Kokkos::Impl::FunctorValueTraits<FunctorType, WorkTag>;
+  using ValueInit   = Kokkos::Impl::FunctorValueInit<FunctorType, WorkTag>;
+  using ValueOps    = Kokkos::Impl::FunctorValueOps<FunctorType, WorkTag>;
 
  public:
-  typedef typename ValueTraits::pointer_type pointer_type;
-  typedef typename ValueTraits::reference_type reference_type;
-  typedef FunctorType functor_type;
-  typedef Cuda::size_type size_type;
+  using pointer_type   = typename ValueTraits::pointer_type;
+  using reference_type = typename ValueTraits::reference_type;
+  using functor_type   = FunctorType;
+  using size_type      = Cuda::size_type;
 
  private:
   // Algorithmic constraints:
@@ -2489,8 +2512,8 @@ class ParallelScanWithTotal<FunctorType, Kokkos::RangePolicy<Traits...>,
                         const Policy& arg_policy, ReturnType& arg_returnvalue)
       : m_functor(arg_functor),
         m_policy(arg_policy),
-        m_scratch_space(0),
-        m_scratch_flags(0),
+        m_scratch_space(nullptr),
+        m_scratch_flags(nullptr),
         m_final(false),
         m_returnvalue(arg_returnvalue)
 #ifdef KOKKOS_IMPL_DEBUG_CUDA_SERIAL_EXECUTION
@@ -2514,7 +2537,7 @@ template <class FunctorType, class ExecPolicy, class ValueType,
           class Tag = typename ExecPolicy::work_tag>
 struct CudaFunctorAdapter {
   const FunctorType f;
-  typedef ValueType value_type;
+  using value_type = ValueType;
   CudaFunctorAdapter(const FunctorType& f_) : f(f_) {}
 
   __device__ inline void operator()(typename ExecPolicy::work_tag,
@@ -2584,7 +2607,7 @@ struct CudaFunctorAdapter {
 template <class FunctorType, class ExecPolicy, class ValueType>
 struct CudaFunctorAdapter<FunctorType, ExecPolicy, ValueType, void> {
   const FunctorType f;
-  typedef ValueType value_type;
+  using value_type = ValueType;
   CudaFunctorAdapter(const FunctorType& f_) : f(f_) {}
 
   __device__ inline void operator()(const typename ExecPolicy::member_type& i,
@@ -2705,13 +2728,14 @@ struct CudaFunctorAdapter<FunctorType, ExecPolicy, ValueType, void> {
 template <class FunctorType, class ResultType, class Tag,
           bool Enable = IsNonTrivialReduceFunctor<FunctorType>::value>
 struct FunctorReferenceType {
-  typedef ResultType& reference_type;
+  using reference_type = ResultType&;
 };
 
 template <class FunctorType, class ResultType, class Tag>
 struct FunctorReferenceType<FunctorType, ResultType, Tag, true> {
-  typedef typename Kokkos::Impl::FunctorValueTraits<
-      FunctorType, Tag>::reference_type reference_type;
+  using reference_type =
+      typename Kokkos::Impl::FunctorValueTraits<FunctorType,
+                                                Tag>::reference_type;
 };
 
 template <class FunctorTypeIn, class ExecPolicy, class ValueType>
@@ -2719,10 +2743,9 @@ struct ParallelReduceFunctorType<FunctorTypeIn, ExecPolicy, ValueType, Cuda> {
   enum {
     FunctorHasValueType = IsNonTrivialReduceFunctor<FunctorTypeIn>::value
   };
-  typedef typename Kokkos::Impl::if_c<
+  using functor_type = typename Kokkos::Impl::if_c<
       FunctorHasValueType, FunctorTypeIn,
-      Impl::CudaFunctorAdapter<FunctorTypeIn, ExecPolicy, ValueType>>::type
-      functor_type;
+      Impl::CudaFunctorAdapter<FunctorTypeIn, ExecPolicy, ValueType>>::type;
   static functor_type functor(const FunctorTypeIn& functor_in) {
     return Impl::if_c<FunctorHasValueType, FunctorTypeIn, functor_type>::select(
         functor_in, functor_type(functor_in));

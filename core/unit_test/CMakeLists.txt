@@ -40,7 +40,7 @@ SET(KOKKOS_HPX_FEATURE_LEVEL 999)
 SET(KOKKOS_HPX_NAME Experimental::HPX)
 SET(KOKKOS_OPENMP_FEATURE_LEVEL 999)
 SET(KOKKOS_OPENMP_NAME OpenMP)
-SET(KOKKOS_OPENMPTARGET_FEATURE_LEVEL 10)
+SET(KOKKOS_OPENMPTARGET_FEATURE_LEVEL 11)
 SET(KOKKOS_OPENMPTARGET_NAME Experimental::OpenMPTarget)
 SET(KOKKOS_SERIAL_FEATURE_LEVEL 999)
 SET(KOKKOS_SERIAL_NAME Serial)
@@ -80,6 +80,7 @@ foreach(Tag Threads;Serial;OpenMP;Cuda;HPX;OpenMPTarget;HIP)
       ${dir}/Test${Tag}_AtomicOperations_complexfloat.cpp
       ${dir}/Test${Tag}_AtomicViews.cpp
       ${dir}/Test${Tag}_Atomics.cpp
+      ${dir}/Test${Tag}_BlockSizeDeduction.cpp
       ${dir}/Test${Tag}_Concepts.cpp
       ${dir}/Test${Tag}_Complex.cpp
       ${dir}/Test${Tag}_Crs.cpp
@@ -92,6 +93,7 @@ foreach(Tag Threads;Serial;OpenMP;Cuda;HPX;OpenMPTarget;HIP)
       ${dir}/Test${Tag}_MDRange_c.cpp
       ${dir}/Test${Tag}_MDRange_d.cpp
       ${dir}/Test${Tag}_MDRange_e.cpp
+      ${dir}/Test${Tag}_MDRange_f.cpp
       ${dir}/Test${Tag}_Other.cpp
       ${dir}/Test${Tag}_RangePolicy.cpp
       ${dir}/Test${Tag}_RangePolicyRequire.cpp
@@ -154,6 +156,7 @@ if(Kokkos_ENABLE_OPENMPTARGET)
     openmptarget/TestOpenMPTarget_MDRange_c.cpp
     openmptarget/TestOpenMPTarget_MDRange_d.cpp
     openmptarget/TestOpenMPTarget_MDRange_e.cpp
+    openmptarget/TestOpenMPTarget_MDRange_f.cpp
     openmptarget/TestOpenMPTarget_Other.cpp
     openmptarget/TestOpenMPTarget_Scan.cpp
     openmptarget/TestOpenMPTarget_Team.cpp
@@ -295,6 +298,12 @@ if(Kokkos_ENABLE_CUDA)
       cuda/TestCudaUVM_ViewMapping_b.cpp
       cuda/TestCudaUVM_ViewMapping_subview.cpp
       cuda/TestCuda_Spaces.cpp
+  )
+
+    KOKKOS_ADD_EXECUTABLE_AND_TEST(
+    UnitTest_CudaTimingBased
+    SOURCES
+      UnitTestMainInit.cpp
       cuda/TestCuda_DebugSerialExecution.cpp
       cuda/TestCuda_DebugPinUVMSpace.cpp
   )
@@ -342,6 +351,12 @@ if(Kokkos_ENABLE_HIP)
     SOURCES
       UnitTestMain.cpp
       hip/TestHIP_InterOp_Init.cpp
+  )
+  KOKKOS_ADD_EXECUTABLE_AND_TEST(
+    UnitTest_HIPInterOpStreams
+    SOURCES
+      UnitTestMain.cpp
+      hip/TestHIP_InterOp_Streams.cpp
   )
 endif()
 
@@ -408,10 +423,12 @@ KOKKOS_ADD_ADVANCED_TEST( UnitTest_PushFinalizeHook_terminate
   endif()
   if(KOKKOS_ENABLE_LIBDL)
 
-    KOKKOS_ADD_LIBRARY(
-    printer-tool SHARED
-    SOURCES tools/printing-tool.cpp
+    add_library(
+      kokkosprinter-tool SHARED
+      tools/printing-tool.cpp
     )
+
+    KOKKOS_SET_LIBRARY_PROPERTIES(kokkosprinter-tool)
 
     KOKKOS_ADD_TEST_EXECUTABLE(
       ProfilingAllCalls
@@ -425,7 +442,7 @@ KOKKOS_ADD_ADVANCED_TEST( UnitTest_PushFinalizeHook_terminate
 
     KOKKOS_ADD_TEST( NAME ProfilingTestLibraryLoad
       EXE  ProfilingAllCalls
-      TOOL printer-tool
+      TOOL kokkosprinter-tool
       PASS_REGULAR_EXPRESSION "kokkosp_init_library::kokkosp_allocate_data:${MEMSPACE_REGEX}:source:${ADDRESS_REGEX}:40::kokkosp_begin_parallel_for:Kokkos::View::initialization [[]source]:0:0::kokkosp_end_parallel_for:0::kokkosp_allocate_data:${MEMSPACE_REGEX}:destination:${ADDRESS_REGEX}:40::kokkosp_begin_parallel_for:Kokkos::View::initialization [[]destination]:0:0::kokkosp_end_parallel_for:0::kokkosp_begin_deep_copy:${MEMSPACE_REGEX}:destination:${ADDRESS_REGEX}:${MEMSPACE_REGEX}:source:${ADDRESS_REGEX}:40::kokkosp_end_deep_copy::kokkosp_begin_parallel_for:parallel_for:${SIZE_REGEX}:0::kokkosp_end_parallel_for:0::kokkosp_begin_parallel_reduce:parallel_reduce:0:1${SKIP_SCRATCH_INITIALIZATION_REGEX}::kokkosp_end_parallel_reduce:1::kokkosp_begin_parallel_scan:parallel_scan:${SIZE_REGEX}:2::kokkosp_end_parallel_scan:2::kokkosp_push_profile_region:push_region::kokkosp_pop_profile_region::kokkosp_create_profile_section:created_section:3::kokkosp_start_profile_section:3::kokkosp_stop_profile_section:3::kokkosp_destroy_profile_section:3::kokkosp_profile_event:profiling_event::kokkosp_deallocate_data:${MEMSPACE_REGEX}:destination:${ADDRESS_REGEX}:40::kokkosp_deallocate_data:${MEMSPACE_REGEX}:source:${ADDRESS_REGEX}:40::kokkosp_finalize_library::"
     )
   endif() #KOKKOS_ENABLE_LIBDL
@@ -517,6 +534,12 @@ ENDFOREACH()
 KOKKOS_ADD_EXECUTABLE_AND_TEST(
   UnitTest_CTestDevice
   SOURCES UnitTestMain.cpp  TestCTestDevice.cpp
+)
+
+KOKKOS_ADD_EXECUTABLE_AND_TEST(
+  UnitTest_CMakePassCmdLineArgs
+  SOURCES UnitTest_CMakePassCmdLineArgs.cpp
+  ARGS one 2 THREE
 )
 
 add_subdirectory(headers_self_contained)

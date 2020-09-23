@@ -297,6 +297,15 @@ class ParallelReduce<FunctorType, Kokkos::RangePolicy<Traits...>, ReducerType,
 
  public:
   inline void execute() const {
+    if (m_policy.end() <= m_policy.begin()) {
+      if (m_result_ptr) {
+        ValueInit::init(ReducerConditional::select(m_functor, m_reducer),
+                        m_result_ptr);
+        Kokkos::Impl::FunctorFinal<ReducerTypeFwd, WorkTagFwd>::final(
+            ReducerConditional::select(m_functor, m_reducer), m_result_ptr);
+      }
+      return;
+    }
     enum {
       is_dynamic = std::is_same<typename Policy::schedule_type::type,
                                 Kokkos::Dynamic>::value
@@ -642,7 +651,7 @@ class ParallelScan<FunctorType, Kokkos::RangePolicy<Traits...>,
           m_functor, range.begin(), range.end(), update_sum, false);
 
       if (data.pool_rendezvous()) {
-        pointer_type ptr_prev = 0;
+        pointer_type ptr_prev = nullptr;
 
         const int n = omp_get_num_threads();
 
@@ -756,7 +765,7 @@ class ParallelScanWithTotal<FunctorType, Kokkos::RangePolicy<Traits...>,
           m_functor, range.begin(), range.end(), update_sum, false);
 
       if (data.pool_rendezvous()) {
-        pointer_type ptr_prev = 0;
+        pointer_type ptr_prev = nullptr;
 
         const int n = omp_get_num_threads();
 
@@ -1014,6 +1023,15 @@ class ParallelReduce<FunctorType, Kokkos::TeamPolicy<Properties...>,
   inline void execute() const {
     enum { is_dynamic = std::is_same<SchedTag, Kokkos::Dynamic>::value };
 
+    if (m_policy.league_size() * m_policy.team_size() == 0) {
+      if (m_result_ptr) {
+        ValueInit::init(ReducerConditional::select(m_functor, m_reducer),
+                        m_result_ptr);
+        Kokkos::Impl::FunctorFinal<ReducerTypeFwd, WorkTagFwd>::final(
+            ReducerConditional::select(m_functor, m_reducer), m_result_ptr);
+      }
+      return;
+    }
     OpenMPExec::verify_is_master("Kokkos::OpenMP parallel_reduce");
 
     const size_t pool_reduce_size =

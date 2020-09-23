@@ -75,9 +75,6 @@
 #include <Kokkos_Cuda.hpp>
 #endif
 
-#if defined(KOKKOS_ENABLE_ROCM)
-#include <Kokkos_ROCm.hpp>
-#endif
 #if defined(KOKKOS_ENABLE_HIP)
 #include <Kokkos_HIP.hpp>
 #endif
@@ -260,6 +257,9 @@ class ScopeGuard {
 // The real answer is to finally break up Kokkos_Parallel_Reduce.hpp into
 // smaller parts...
 #include <impl/Kokkos_Combined_Reducer.hpp>
+// Yet another workaround to deal with circular dependency issues because the
+// implementation of the RAII wrapper is using Kokkos::single.
+#include <Kokkos_AcquireUniqueTokenImpl.hpp>
 
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
