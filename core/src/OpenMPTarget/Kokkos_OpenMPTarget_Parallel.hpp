@@ -207,10 +207,12 @@ template <class FunctorType, class PolicyType, class ReducerType,
           class PointerType, class ValueType>
 struct ParallelReduceSpecialize<FunctorType, PolicyType, ReducerType,
                                 PointerType, ValueType, 0, 1> {
+#if !defined(KOKKOS_COMPILER_PGI)
 #pragma omp declare reduction(                                         \
     custom:ValueType                                                   \
     : OpenMPTargetReducerWrapper <ReducerType>::join(omp_out, omp_in)) \
     initializer(OpenMPTargetReducerWrapper <ReducerType>::init(omp_priv))
+#endif
 
   template <class TagType>
   inline static
@@ -230,8 +232,13 @@ struct ParallelReduceSpecialize<FunctorType, PolicyType, ReducerType,
     OpenMPTargetReducerWrapper<ReducerType>::init(result);
 
 // clang-format off
+#if !defined(KOKKOS_COMPILER_PGI)
 #pragma omp target teams distribute parallel for num_teams(512) map(to: f) \
     map(tofrom: result) reduction(custom: result)
+#else
+#pragma omp target teams distribute parallel for num_teams(512) map(to: f) \
+    reduction(+: result)
+#endif
     for (auto i = begin; i < end; i++) f(i, result);
     // clang-format on
     *result_ptr = result;
@@ -255,8 +262,13 @@ struct ParallelReduceSpecialize<FunctorType, PolicyType, ReducerType,
     OpenMPTargetReducerWrapper<ReducerType>::init(result);
 
 // clang-format off
+#if !defined(KOKKOS_COMPILER_PGI)
 #pragma omp target teams distribute parallel for num_teams(512) map(to: f) \
     map(tofrom: result) reduction(custom: result)
+#else
+#pragma omp target teams distribute parallel for num_teams(512) map(to: f) \
+    reduction(+: result)
+#endif
     for (auto i = begin; i < end; i++) f(TagType(), i, result);
     // clang-format on
 

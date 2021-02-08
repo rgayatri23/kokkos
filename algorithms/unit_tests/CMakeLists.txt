@@ -81,3 +81,9 @@ KOKKOS_ADD_EXECUTABLE_AND_TEST(
   UnitTest
   SOURCES ${SOURCES}
 )
+if(Kokkos_ENABLE_OPENMPTARGET)
+  list(REMOVE_ITEM SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/unit_test/default/TestDefaultDeviceType_a1.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/unit_test/default/TestDefaultDeviceType_b1.cpp
+    )
+endif()

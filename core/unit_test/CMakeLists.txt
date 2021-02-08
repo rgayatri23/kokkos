@@ -40,7 +40,7 @@ SET(KOKKOS_HPX_FEATURE_LEVEL 999)
 SET(KOKKOS_HPX_NAME Experimental::HPX)
 SET(KOKKOS_OPENMP_FEATURE_LEVEL 999)
 SET(KOKKOS_OPENMP_NAME OpenMP)
-SET(KOKKOS_OPENMPTARGET_FEATURE_LEVEL 13)
+SET(KOKKOS_OPENMPTARGET_FEATURE_LEVEL 8)
 SET(KOKKOS_OPENMPTARGET_NAME Experimental::OpenMPTarget)
 SET(KOKKOS_SERIAL_FEATURE_LEVEL 999)
 SET(KOKKOS_SERIAL_NAME Serial)
@@ -261,12 +261,64 @@ if(Kokkos_ENABLE_OPENMPTARGET)
     ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_TeamScan.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_TeamVectorRange.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_UniqueToken.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_TestScan.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_TestTeamScan.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_TestTeamReductionScan.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_Atomics.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_AtomicOperations.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_AtomicOperations_complexdouble.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_AtomicOperations_complexfloat.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_AtomicOperations_float.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_AtomicOperations_int.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_AtomicOperations_longint.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_AtomicOperations_longlongint.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_AtomicOperations_double.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_AtomicOperations_unsignedint.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_AtomicOperations_unsignedlongint.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_AtomicViews.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_BlockSizeDeduction.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_ViewAPI_e.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_ViewCopy_a.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_ViewCopy_b.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_ViewMapping_subview.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_ViewOfClass.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_WorkGraph.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_Reducers_a.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_Reducers_b.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_Reducers_c.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_Reducers_d.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_ViewMapping_b.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_TeamBasic.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_Scan.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_NumericTraits.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_DeepCopyAlignment.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_MathematicalFunctions.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_SubView_b.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_SubView_c01.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_SubView_c02.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_SubView_c03.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_SubView_c04.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_SubView_c05.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_SubView_c06.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_SubView_c07.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_SubView_c08.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_SubView_c09.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_SubView_c10.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_SubView_c11.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_SubView_c12.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_SubView_c13.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_MDRange_a.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_MDRange_b.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_MDRange_c.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_MDRange_d.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_ViewAPI_a.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_ViewAPI_b.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_ViewAPI_c.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_ViewAPI_d.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_ViewAPI_e.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_ViewAPI_f.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_ViewResize.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/openmptarget/TestOpenMPTarget_RangePolicyRequire.cpp
   )
 endif()
 
@@ -554,10 +606,10 @@ SET(DEFAULT_DEVICE_SOURCES
   default/TestDefaultDeviceTypeResize.cpp
 )
 
-KOKKOS_ADD_EXECUTABLE_AND_TEST(
-  UnitTest_Default
-  SOURCES ${DEFAULT_DEVICE_SOURCES}
-)
+#KOKKOS_ADD_EXECUTABLE_AND_TEST(
+#  UnitTest_Default
+#  SOURCES ${DEFAULT_DEVICE_SOURCES}
+#)
 
 KOKKOS_ADD_EXECUTABLE_AND_TEST(
   UnitTest_PushFinalizeHook
