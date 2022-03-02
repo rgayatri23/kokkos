@@ -996,12 +996,10 @@ class OpenMPTargetExecTeamMember {
 
     // The scratch memory allocated is a sum of TEAM_REDUCE_SIZE, L0 shmem size
     // and L1 shmem size. TEAM_REDUCE_SIZE = 512 bytes saved per team for
-    // hierarchical reduction. There is an additional 10% of the requested
-    // scratch memory allocated per team as padding. Hence the product with 0.1.
+    // hierarchical reduction.
     const int reduce_offset =
         m_shmem_block_index *
-        (shmem_size_L0 + shmem_size_L1 +
-         ((shmem_size_L0 + shmem_size_L1) * 0.1) + TEAM_REDUCE_SIZE);
+        (shmem_size_L0 + shmem_size_L1 + TEAM_REDUCE_SIZE);
     const int l0_offset = reduce_offset + TEAM_REDUCE_SIZE;
     const int l1_offset = l0_offset + shmem_size_L0;
     m_team_shared       = scratch_memory_space(

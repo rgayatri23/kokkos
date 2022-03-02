@@ -123,11 +123,11 @@ void OpenMPTargetExec::resize_scratch(int64_t team_size, int64_t shmem_size_L0,
   Kokkos::Experimental::OpenMPTargetSpace space;
   const int64_t shmem_size =
       shmem_size_L0 + shmem_size_L1;  // L0 + L1 scratch memory per team.
-  const int64_t padding = shmem_size * 10 / 100;  // Padding per team.
   // Total amount of scratch memory allocated is depenedent
   // on the maximum number of in-flight teams possible.
+  // Getting rid of padding in here because it leads to memory copy issues with LAMMPS-SNAP.
   int64_t total_size =
-      (shmem_size + OpenMPTargetExecTeamMember::TEAM_REDUCE_SIZE + padding) *
+      (shmem_size + OpenMPTargetExecTeamMember::TEAM_REDUCE_SIZE) *
       std::min(MAX_ACTIVE_THREADS / team_size, league_size);
 
   if (total_size > m_scratch_size) {

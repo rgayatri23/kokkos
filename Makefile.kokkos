@@ -1,4 +1,8 @@
 # Default settings common options.
+# LAMMPS specific setting
+ifndef KOKKOS_PATH
+	KOKKOS_PATH=/global/cscratch1/sd/rgayatri/EXAALT/lammps-kokkos
+endif
 
 KOKKOS_VERSION_MAJOR = 3
 KOKKOS_VERSION_MINOR = 6
@@ -1081,7 +1085,7 @@ endif
 
 ifeq ($(KOKKOS_INTERNAL_USE_OPENMPTARGET), 1)
   ifeq ($(KOKKOS_INTERNAL_COMPILER_CLANG), 1)
-    KOKKOS_INTERNAL_CUDA_ARCH_FLAG=-fopenmp-targets=nvptx64-nvidia-cuda -Xopenmp-target -march
+    KOKKOS_INTERNAL_CUDA_ARCH_FLAG=-fopenmp-new-driver -fopenmp-targets=nvptx64 -Xopenmp-target=nvptx64-unknown-cuda -march
   endif
   KOKKOS_INTERNAL_USE_CUDA_ARCH = 1
 endif
