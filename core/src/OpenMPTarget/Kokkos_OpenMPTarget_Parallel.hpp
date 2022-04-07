@@ -812,6 +812,7 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
 
       // Get dynamic shared memory based on the environment variable set during runtime.
       auto shared_mem_ptr = get_dynamic_shared();
+#pragma omp barrier
 
       // Iterate through the number of teams until league_size and assign the
       // league_id accordingly
