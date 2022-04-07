@@ -53,6 +53,14 @@
 namespace Kokkos {
 namespace Impl {
 
+    // Variants of functions for dynamic shared memory based on whether it is called on host or device.
+    // The device version for nvidia 64 bit architecture calls the routine which reads the value set for LIBOMPTARGET_SHARED_MEMORY_SIZE at runtime.
+    inline void *get_dynamic_shared() { return NULL; }
+#pragma omp begin declare variant match(device = {arch(nvptx64)})
+    extern "C" void *__kmpc_get_dynamic_shared();
+    inline void *get_dynamic_shared() { return __kmpc_get_dynamic_shared(); }
+#pragma omp end declare variant
+
 template <class FunctorType, class... Traits>
 class ParallelFor<FunctorType, Kokkos::RangePolicy<Traits...>,
                   Kokkos::Experimental::OpenMPTarget> {
@@ -802,15 +810,25 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
       const int blockIdx = omp_get_team_num();
       const int gridDim  = omp_get_num_teams();
 
+      // Get dynamic shared memory based on the environment variable set during runtime.
+      auto shared_mem_ptr = get_dynamic_shared();
+
       // Iterate through the number of teams until league_size and assign the
       // league_id accordingly
       // Guarantee that the compilers respect the `num_teams` clause
       if (gridDim <= nteams) {
         for (int league_id = blockIdx; league_id < league_size;
              league_id += gridDim) {
+
+            // Pass the dynamic shared pointer to the team constructor instead of the scratch_ptr that is allocated.
           typename Policy::member_type team(
-              league_id, league_size, team_size, vector_length, scratch_ptr,
+              league_id, league_size, team_size, vector_length, shared_mem_ptr,
               blockIdx, shmem_size_L0, shmem_size_L1);
+          /*
+           *typename Policy::member_type team(
+           *    league_id, league_size, team_size, vector_length, scratch_ptr,
+           *    blockIdx, shmem_size_L0, shmem_size_L1);
+           */
           if constexpr (std::is_same<TagType, void>::value)
             m_functor(team);
           else
