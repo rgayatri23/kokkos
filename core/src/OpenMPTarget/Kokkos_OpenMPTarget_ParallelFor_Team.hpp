@@ -17,7 +17,10 @@
 #ifndef KOKKOS_OPENMPTARGET_PARALLEL_FOR_TEAM_HPP
 #define KOKKOS_OPENMPTARGET_PARALLEL_FOR_TEAM_HPP
 
-//#define KOKKOS_IMPL_LOCK_FREE_HIERARCHICAL
+// Intel architectures prefer the classical hierarchical parallelism that relies on OpenMP.
+#if defined(KOKKOS_ARCH_INTEL_GPU)
+#define KOKKOS_IMPL_HIERARCHICAL_INTEL_GPU
+#endif
 
 #include <omp.h>
 #include <sstream>
@@ -130,10 +133,9 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
 // the clang compiler. atomic_compare_exchange can be avoided since the standard
 // guarantees that the number of teams specified in the `num_teams` clause is
 // always less than or equal to the maximum concurrently running teams.
-#if KOKKOS_IMPL_LOCK_FREE_HIERARCHICAL
-#pragma omp target teams num_teams(nteams) thread_limit(team_size) \
-    map(to                                                         \
-        : a_functor) is_device_ptr(scratch_ptr)
+#if !defined(KOKKOS_IMPL_HIERARCHICAL_INTEL_GPU)
+#pragma omp target teams num_teams(max_active_teams) thread_limit(team_size) \
+    firstprivate(a_functor) is_device_ptr(scratch_ptr)
 #pragma omp parallel
     {
       const int blockIdx = omp_get_team_num();
@@ -157,43 +159,20 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
         Kokkos::abort("`num_teams` clause was not respected.\n");
     }
 #else
-    int* lock_array = OpenMPTargetExec::get_lock_array(max_active_teams);
-
-#pragma omp target teams distribute map(to                   \
-                                        : a_functor)         \
+#pragma omp target teams distribute firstprivate(a_functor) num_teams(max_active_teams) \
     is_device_ptr(scratch_ptr, lock_array) \
         thread_limit(team_size)
     for (int i = 0; i < league_size; i++) {
-      int shmem_block_index = -1, lock_team = 99999, iter = -1;
-      iter = (omp_get_team_num() % max_active_teams);
-
-      // Loop as long as a shmem_block_index is not found.
-      while (shmem_block_index == -1) {
-        // Try and acquire a lock on the index.
-        lock_team = atomic_compare_exchange(&lock_array[iter], 0, 1);
-
-        // If lock is acquired assign it to the block index.
-        // lock_team = 0, implies atomic_compare_exchange is successfull.
-        if (lock_team == 0)
-          shmem_block_index = iter;
-        else
-          iter = ++iter % max_active_teams;
-      }
-
 #pragma omp parallel num_threads(team_size)
       {
           typename Policy::member_type team(
               i, league_size, team_size, vector_length, scratch_ptr,
-              shmem_block_index, shmem_size_L0, shmem_size_L1);
+              i, shmem_size_L0, shmem_size_L1);
           if constexpr (std::is_void<TagType>::value)
             m_functor(team);
           else
             m_functor(TagType(), team);
       }
-
-      // Free the locked block and increment the number of available free
-      // blocks.
-      lock_team = atomic_compare_exchange(&lock_array[shmem_block_index], 1, 0);
     }
 #endif
   }
@@ -210,8 +189,8 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
 }  // namespace Impl
 }  // namespace Kokkos
 
-#ifdef KOKKOS_IMPL_LOCK_FREE_HIERARCHICAL
-#undef KOKKOS_IMPL_LOCK_FREE_HIERARCHICAL
+#ifdef KOKKOS_IMPL_HIERARCHICAL_INTEL_GPU
+#undef KOKKOS_IMPL_HIERARCHICAL_INTEL_GPU
 #endif
 
 #endif
