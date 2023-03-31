@@ -134,7 +134,7 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
 // guarantees that the number of teams specified in the `num_teams` clause is
 // always less than or equal to the maximum concurrently running teams.
 #if !defined(KOKKOS_IMPL_HIERARCHICAL_INTEL_GPU)
-#pragma omp target teams num_teams(max_active_teams) thread_limit(team_size) \
+#pragma omp target teams num_teams(nteams) thread_limit(team_size) \
     firstprivate(a_functor) is_device_ptr(scratch_ptr)
 #pragma omp parallel
     {
@@ -159,8 +159,9 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
         Kokkos::abort("`num_teams` clause was not respected.\n");
     }
 #else
+
 #pragma omp target teams distribute firstprivate(a_functor) num_teams(max_active_teams) \
-    is_device_ptr(scratch_ptr, lock_array) \
+    is_device_ptr(scratch_ptr) \
         thread_limit(team_size)
     for (int i = 0; i < league_size; i++) {
 #pragma omp parallel num_threads(team_size)

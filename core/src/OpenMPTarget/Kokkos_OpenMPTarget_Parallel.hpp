@@ -723,11 +723,20 @@ namespace Impl {
 
 class OpenMPTargetExec {
  public:
-  // FIXME_OPENMPTARGET - Currently the maximum number of
-  // teams possible is calculated based on NVIDIA's Volta GPU. In
-  // future this value should be based on the chosen architecture for the
-  // OpenMPTarget backend.
-  static constexpr int MAX_ACTIVE_THREADS = 2080 * 80;
+  static constexpr int MAX_THREADS_BLOCK = 2048;
+#if defined(KOKKOS_IMPL_ARCH_NVIDIA_GPU)
+#if defined(KOKKOS_ARCH_AMPERE86)
+  static constexpr int MAX_ACTIVE_THREADS = MAX_THREADS_BLOCK * 1536;
+#elif defined(KOKKOS_ARCH_AMPERE80) 
+  static constexpr int MAX_ACTIVE_THREADS = MAX_THREADS_BLOCK * 108;
+#elif defined(KOKKOS_ARCH_VOLTA72) 
+  static constexpr int MAX_ACTIVE_THREADS = MAX_THREADS_BLOCK * 84;
+#elif defined(KOKKOS_ARCH_VOLTA70)
+  static constexpr int MAX_ACTIVE_THREADS = MAX_THREADS_BLOCK * 80;
+#elif defined(KOKKOS_ARCH_PASCAL60) || defined(KOKKOS_ARCH_PASCAL61)
+  static constexpr int MAX_ACTIVE_THREADS = MAX_THREADS_BLOCK * 60;
+#endif
+#endif
   static constexpr int MAX_ACTIVE_TEAMS   = MAX_ACTIVE_THREADS / 32;
 
  private:
