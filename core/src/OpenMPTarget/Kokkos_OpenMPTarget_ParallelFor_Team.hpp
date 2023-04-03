@@ -160,6 +160,16 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
     }
 #else
 
+	int max_active_hw_threads = 0;
+
+#pragma omp target map(max_active_hw_threads)
+{
+	max_active_hw_threads = omp_get_num_procs();
+}
+
+	max_active_teams = max_active_hw_threads;
+	
+
 #pragma omp target teams distribute firstprivate(a_functor) num_teams(max_active_teams) \
     is_device_ptr(scratch_ptr) \
         thread_limit(team_size)

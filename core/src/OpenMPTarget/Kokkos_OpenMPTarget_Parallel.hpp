@@ -328,10 +328,12 @@ class TeamPolicyInternal<Kokkos::Experimental::OpenMPTarget, Properties...>
     m_league_size = league_size_request;
 
     // Minimum team size should be 32 for OpenMPTarget backend.
+#if !defined(KOKKOS_ARCH_INTEL_GPU)
     if (team_size_request < 32) {
       Kokkos::Impl::OpenMPTarget_abort(
           "OpenMPTarget backend requires a minimum of 32 threads per team.\n");
-    } else
+    }
+#endif
       m_team_size = team_size_request;
 
     m_vector_length = vector_length_request;
@@ -736,6 +738,8 @@ class OpenMPTargetExec {
 #elif defined(KOKKOS_ARCH_PASCAL60) || defined(KOKKOS_ARCH_PASCAL61)
   static constexpr int MAX_ACTIVE_THREADS = MAX_THREADS_BLOCK * 60;
 #endif
+#else
+  static constexpr int MAX_ACTIVE_THREADS = 2048 * 80;
 #endif
   static constexpr int MAX_ACTIVE_TEAMS   = MAX_ACTIVE_THREADS / 32;
 
