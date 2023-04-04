@@ -334,7 +334,7 @@ class TeamPolicyInternal<Kokkos::Experimental::OpenMPTarget, Properties...>
           "OpenMPTarget backend requires a minimum of 32 threads per team.\n");
     }
 #endif
-      m_team_size = team_size_request;
+    m_team_size = team_size_request;
 
     m_vector_length = vector_length_request;
     set_auto_chunk_size();
@@ -729,9 +729,9 @@ class OpenMPTargetExec {
 #if defined(KOKKOS_IMPL_ARCH_NVIDIA_GPU)
 #if defined(KOKKOS_ARCH_AMPERE86)
   static constexpr int MAX_ACTIVE_THREADS = MAX_THREADS_BLOCK * 1536;
-#elif defined(KOKKOS_ARCH_AMPERE80) 
+#elif defined(KOKKOS_ARCH_AMPERE80)
   static constexpr int MAX_ACTIVE_THREADS = MAX_THREADS_BLOCK * 108;
-#elif defined(KOKKOS_ARCH_VOLTA72) 
+#elif defined(KOKKOS_ARCH_VOLTA72)
   static constexpr int MAX_ACTIVE_THREADS = MAX_THREADS_BLOCK * 84;
 #elif defined(KOKKOS_ARCH_VOLTA70)
   static constexpr int MAX_ACTIVE_THREADS = MAX_THREADS_BLOCK * 80;
@@ -741,7 +741,7 @@ class OpenMPTargetExec {
 #else
   static constexpr int MAX_ACTIVE_THREADS = 2048 * 80;
 #endif
-  static constexpr int MAX_ACTIVE_TEAMS   = MAX_ACTIVE_THREADS / 32;
+  static constexpr int MAX_ACTIVE_TEAMS = MAX_ACTIVE_THREADS / 32;
 
  private:
   static void* scratch_ptr;

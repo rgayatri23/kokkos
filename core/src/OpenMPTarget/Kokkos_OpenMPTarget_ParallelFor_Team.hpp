@@ -17,7 +17,8 @@
 #ifndef KOKKOS_OPENMPTARGET_PARALLEL_FOR_TEAM_HPP
 #define KOKKOS_OPENMPTARGET_PARALLEL_FOR_TEAM_HPP
 
-// Intel architectures prefer the classical hierarchical parallelism that relies on OpenMP.
+// Intel architectures prefer the classical hierarchical parallelism that relies
+// on OpenMP.
 #if defined(KOKKOS_ARCH_INTEL_GPU)
 #define KOKKOS_IMPL_HIERARCHICAL_INTEL_GPU
 #endif
@@ -160,29 +161,28 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
     }
 #else
 
-	int max_active_hw_threads = 0;
+      // FIXME_OPENMPTARGET - The ideal scenario for Intel GPUs is to let the
+      // compiler decide the number of teams and threads per team. However since
+      // there are buffers related to scratch memory and hierarchical
+      // parallelism that need to be allocated based on the number of teams, we
+      // chose a large number for the number of teams.
 
-#pragma omp target map(max_active_hw_threads)
-{
-	max_active_hw_threads = omp_get_num_procs();
-}
+#pragma omp target map(max_active_teams)
+    { max_active_teams = omp_get_num_procs(); }
 
-	max_active_teams = max_active_hw_threads;
-	
-
-#pragma omp target teams distribute firstprivate(a_functor) num_teams(max_active_teams) \
-    is_device_ptr(scratch_ptr) \
+#pragma omp target teams distribute firstprivate(a_functor) \
+    num_teams(max_active_teams) is_device_ptr(scratch_ptr)  \
         thread_limit(team_size)
     for (int i = 0; i < league_size; i++) {
 #pragma omp parallel num_threads(team_size)
       {
-          typename Policy::member_type team(
-              i, league_size, team_size, vector_length, scratch_ptr,
-              i, shmem_size_L0, shmem_size_L1);
-          if constexpr (std::is_void<TagType>::value)
-            m_functor(team);
-          else
-            m_functor(TagType(), team);
+        typename Policy::member_type team(i, league_size, team_size,
+                                          vector_length, scratch_ptr, i,
+                                          shmem_size_L0, shmem_size_L1);
+        if constexpr (std::is_void<TagType>::value)
+          m_functor(team);
+        else
+          m_functor(TagType(), team);
       }
     }
 #endif

@@ -100,17 +100,31 @@ void OpenMPTargetExec::resize_scratch(int64_t team_size, int64_t shmem_size_L0,
   const int64_t shmem_size =
       shmem_size_L0 + shmem_size_L1;  // L0 + L1 scratch memory per team.
   const int64_t padding = shmem_size * 10 / 100;  // Padding per team.
+
+#if defined(KOKKOS_IMPL_HIERARCHICAL_INTEL_GPU)
+  int max_active_hw_threads = 0;
+#pragma omp target map(max_active_hw_threads)
+  { max_active_hw_threads = omp_get_num_procs(); }
+
+  int64_t total_size =
+      (shmem_size + OpenMPTargetExecTeamMember::TEAM_REDUCE_SIZE + padding) *
+      max_active_hw_threads;
+#else
+
   // Total amount of scratch memory allocated is depenedent
   // on the maximum number of in-flight teams possible.
   int64_t total_size =
       (shmem_size + OpenMPTargetExecTeamMember::TEAM_REDUCE_SIZE + padding) *
       std::min(MAX_ACTIVE_THREADS / team_size, league_size);
+#endif
 
   if (total_size > m_scratch_size) {
     space.deallocate(m_scratch_ptr, m_scratch_size);
     m_scratch_size = total_size;
     m_scratch_ptr  = space.allocate(total_size);
   }
+
+  // FIXME_OPENMPTARGET -
 }
 
 int* OpenMPTargetExec::get_lock_array(int num_teams) {
