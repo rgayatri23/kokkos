@@ -74,6 +74,8 @@ int64_t OpenMPTargetExec::m_scratch_size      = 0;
 int* OpenMPTargetExec::m_lock_array           = nullptr;
 int64_t OpenMPTargetExec::m_lock_size         = 0;
 uint32_t* OpenMPTargetExec::m_uniquetoken_ptr = nullptr;
+int OpenMPTargetExec::MAX_ACTIVE_THREADS =
+    Kokkos::Experimental::OpenMPTarget().concurrency();
 
 void OpenMPTargetExec::clear_scratch() {
   Kokkos::Experimental::OpenMPTargetSpace space;
@@ -115,7 +117,7 @@ void OpenMPTargetExec::resize_scratch(int64_t team_size, int64_t shmem_size_L0,
   // on the maximum number of in-flight teams possible.
   int64_t total_size =
       (shmem_size + OpenMPTargetExecTeamMember::TEAM_REDUCE_SIZE + padding) *
-      std::min(MAX_ACTIVE_THREADS / team_size, league_size);
+      std::min(OpenMPTargetExec::MAX_ACTIVE_THREADS / team_size, league_size);
 #endif
 
   if (total_size > m_scratch_size) {

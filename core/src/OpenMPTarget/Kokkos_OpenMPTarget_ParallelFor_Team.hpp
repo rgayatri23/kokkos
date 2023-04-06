@@ -121,13 +121,12 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
     // mode but works in the Debug mode.
 
     // Maximum active teams possible.
-    int max_active_teams = OpenMPTargetExec::MAX_ACTIVE_THREADS / team_size;
-    // nteams should not exceed the maximum in-flight teams possible.
-    const auto nteams =
-        league_size < max_active_teams ? league_size : max_active_teams;
+    // The number should not exceed the maximum in-flight teams possible.
+    int max_active_teams =
+        std::min(OpenMPTargetExec::MAX_ACTIVE_THREADS / team_size, league_size);
 
     // If the league size is <=0, do not launch the kernel.
-    if (nteams <= 0) return;
+    if (max_active_teams <= 0) return;
 
 // Performing our own scheduling of teams to avoid separation of code between
 // teams-distribute and parallel. Gave a 2x performance boost in test cases with
@@ -135,7 +134,7 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
 // guarantees that the number of teams specified in the `num_teams` clause is
 // always less than or equal to the maximum concurrently running teams.
 #if !defined(KOKKOS_IMPL_HIERARCHICAL_INTEL_GPU)
-#pragma omp target teams num_teams(nteams) thread_limit(team_size) \
+#pragma omp target teams num_teams(max_active_teams) thread_limit(team_size) \
     firstprivate(a_functor) is_device_ptr(scratch_ptr)
 #pragma omp parallel
     {
@@ -145,7 +144,7 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
       // Iterate through the number of teams until league_size and assign the
       // league_id accordingly
       // Guarantee that the compilers respect the `num_teams` clause
-      if (gridDim <= nteams) {
+      if (gridDim <= max_active_teams) {
         for (int league_id = blockIdx; league_id < league_size;
              league_id += gridDim) {
           typename Policy::member_type team(
@@ -160,16 +159,6 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
         Kokkos::abort("`num_teams` clause was not respected.\n");
     }
 #else
-
-      // FIXME_OPENMPTARGET - The ideal scenario for Intel GPUs is to let the
-      // compiler decide the number of teams and threads per team. However since
-      // there are buffers related to scratch memory and hierarchical
-      // parallelism that need to be allocated based on the number of teams, we
-      // chose a large number for the number of teams.
-
-#pragma omp target map(max_active_teams)
-    { max_active_teams = omp_get_num_procs(); }
-
 #pragma omp target teams distribute firstprivate(a_functor) \
     num_teams(max_active_teams) is_device_ptr(scratch_ptr)  \
         thread_limit(team_size)

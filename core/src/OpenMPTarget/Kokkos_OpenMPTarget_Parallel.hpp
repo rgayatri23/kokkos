@@ -725,23 +725,7 @@ namespace Impl {
 
 class OpenMPTargetExec {
  public:
-  static constexpr int MAX_THREADS_BLOCK = 2048;
-#if defined(KOKKOS_IMPL_ARCH_NVIDIA_GPU)
-#if defined(KOKKOS_ARCH_AMPERE86)
-  static constexpr int MAX_ACTIVE_THREADS = MAX_THREADS_BLOCK * 1536;
-#elif defined(KOKKOS_ARCH_AMPERE80)
-  static constexpr int MAX_ACTIVE_THREADS = MAX_THREADS_BLOCK * 108;
-#elif defined(KOKKOS_ARCH_VOLTA72)
-  static constexpr int MAX_ACTIVE_THREADS = MAX_THREADS_BLOCK * 84;
-#elif defined(KOKKOS_ARCH_VOLTA70)
-  static constexpr int MAX_ACTIVE_THREADS = MAX_THREADS_BLOCK * 80;
-#elif defined(KOKKOS_ARCH_PASCAL60) || defined(KOKKOS_ARCH_PASCAL61)
-  static constexpr int MAX_ACTIVE_THREADS = MAX_THREADS_BLOCK * 60;
-#endif
-#else
-  static constexpr int MAX_ACTIVE_THREADS = 2048 * 80;
-#endif
-  static constexpr int MAX_ACTIVE_TEAMS = MAX_ACTIVE_THREADS / 32;
+  static int MAX_ACTIVE_THREADS;
 
  private:
   static void* scratch_ptr;
