@@ -122,11 +122,14 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
 
     // Maximum active teams possible.
     // The number should not exceed the maximum in-flight teams possible.
-    int max_active_teams =
-        std::min(OpenMPTargetExec::MAX_ACTIVE_THREADS / team_size, league_size);
-
+    // We have already set the maximum number of teams in the `resize_scratch`
+    // routine.
+    int max_active_teams = omp_get_max_teams();
     // If the league size is <=0, do not launch the kernel.
     if (max_active_teams <= 0) return;
+
+    // Set the upper bound to the number of teams that can be generated.
+    omp_set_num_teams(max_active_teams);
 
 // Performing our own scheduling of teams to avoid separation of code between
 // teams-distribute and parallel. Gave a 2x performance boost in test cases with
@@ -134,37 +137,39 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
 // guarantees that the number of teams specified in the `num_teams` clause is
 // always less than or equal to the maximum concurrently running teams.
 #if !defined(KOKKOS_IMPL_HIERARCHICAL_INTEL_GPU)
-#pragma omp target teams num_teams(max_active_teams) thread_limit(team_size) \
-    firstprivate(a_functor) is_device_ptr(scratch_ptr)
+#pragma omp target teams thread_limit(team_size) firstprivate(a_functor) \
+    is_device_ptr(scratch_ptr)
 #pragma omp parallel
     {
+      if (omp_get_num_teams() > max_active_teams)
+        Kokkos::abort("`omp_set_num_teams` call was not respected.\n");
+
       const int blockIdx = omp_get_team_num();
       const int gridDim  = omp_get_num_teams();
 
       // Iterate through the number of teams until league_size and assign the
       // league_id accordingly
       // Guarantee that the compilers respect the `num_teams` clause
-      if (gridDim <= max_active_teams) {
-        for (int league_id = blockIdx; league_id < league_size;
-             league_id += gridDim) {
-          typename Policy::member_type team(
-              league_id, league_size, team_size, vector_length, scratch_ptr,
-              blockIdx, shmem_size_L0, shmem_size_L1);
-          if constexpr (std::is_void<TagType>::value)
-            m_functor(team);
-          else
-            m_functor(TagType(), team);
-        }
-      } else
-        Kokkos::abort("`num_teams` clause was not respected.\n");
+      for (int league_id = blockIdx; league_id < league_size;
+           league_id += gridDim) {
+        typename Policy::member_type team(league_id, league_size, team_size,
+                                          vector_length, scratch_ptr, blockIdx,
+                                          shmem_size_L0, shmem_size_L1);
+        if constexpr (std::is_void<TagType>::value)
+          m_functor(team);
+        else
+          m_functor(TagType(), team);
+      }
     }
 #else
 #pragma omp target teams distribute firstprivate(a_functor) \
-    num_teams(max_active_teams) is_device_ptr(scratch_ptr)  \
-        thread_limit(team_size)
+    is_device_ptr(scratch_ptr) thread_limit(team_size)
     for (int i = 0; i < league_size; i++) {
 #pragma omp parallel num_threads(team_size)
       {
+        if (omp_get_num_teams() > max_active_teams)
+          Kokkos::abort("`omp_set_num_teams` call was not respected.\n");
+
         typename Policy::member_type team(i, league_size, team_size,
                                           vector_length, scratch_ptr, i,
                                           shmem_size_L0, shmem_size_L1);

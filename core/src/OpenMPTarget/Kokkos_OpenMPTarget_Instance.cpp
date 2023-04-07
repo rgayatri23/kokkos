@@ -79,9 +79,12 @@ int OpenMPTargetInternal::concurrency() const {
 #elif defined(KOKKOS_ARCH_PASCAL60) || defined(KOKKOS_ARCH_PASCAL61)
   int max_threads = max_threads_block * 60;
 #endif
-#elif defined(KOKKOS_IMPL_HIERARCHICAL_INTEL_GPU)
-#pragma omp target map(max_active_teams)
+#elif defined(KOKKOS_ARCH_INTEL_GPU)
+#pragma omp target map(max_threads)
   { max_threads = omp_get_num_procs(); }
+
+  // Multiply the number of processors with teh SIMD length.
+  max_threads *= 64;
 #else
   int max_threads = 2048 * 80;
 #endif
