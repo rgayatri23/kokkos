@@ -109,8 +109,7 @@ void OpenMPTargetExec::resize_scratch(int64_t team_size, int64_t shmem_size_L0,
   int max_active_teams =
       std::min(OpenMPTargetExec::MAX_ACTIVE_THREADS / team_size, league_size);
 
-  // Set the upper bound to the number of teams that can be generated to
-  // maximum_active_teams.
+  // Set max_active_teams as the upper bound to the number of teams that can be generated.
   omp_set_num_teams(max_active_teams);
 
   // Total amount of scratch memory allocated is depenedent

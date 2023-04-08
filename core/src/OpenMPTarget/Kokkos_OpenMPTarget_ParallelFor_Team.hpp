@@ -125,11 +125,9 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
     // We have already set the maximum number of teams in the `resize_scratch`
     // routine.
     int max_active_teams = omp_get_max_teams();
+
     // If the league size is <=0, do not launch the kernel.
     if (max_active_teams <= 0) return;
-
-    // Set the upper bound to the number of teams that can be generated.
-    omp_set_num_teams(max_active_teams);
 
 // Performing our own scheduling of teams to avoid separation of code between
 // teams-distribute and parallel. Gave a 2x performance boost in test cases with
