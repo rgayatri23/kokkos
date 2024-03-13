@@ -1004,9 +1004,10 @@ ifeq ($(KOKKOS_INTERNAL_USE_OPENMPTARGET), 1)
   endif
 endif
 
+# FIXME_OPENMPTARGET - This condition does not allow Makefile builds with OpenMPTarget backend and hence commenting it out for now.
 # Do not add this flag if its the cray compiler or the nvhpc compiler.
-ifeq ($(KOKKOS_INTERNAL_COMPILER_CRAY_CLANG), 0)
-  ifeq ($(KOKKOS_INTERNAL_COMPILER_NVHPC), 0)
+#ifeq ($(KOKKOS_INTERNAL_COMPILER_CRAY_CLANG), 0)
+  #ifeq ($(KOKKOS_INTERNAL_COMPILER_NVHPC), 0)
     # Lets start with adding architecture defines
     ifeq ($(KOKKOS_INTERNAL_USE_ARCH_KEPLER30), 1)
       tmp := $(call kokkos_append_header,"$H""define KOKKOS_ARCH_KEPLER")
@@ -1086,8 +1087,8 @@ ifeq ($(KOKKOS_INTERNAL_COMPILER_CRAY_CLANG), 0)
       tmp := $(call kokkos_append_header,"$H""define KOKKOS_ARCH_HOPPER90")
       KOKKOS_INTERNAL_CUDA_ARCH_FLAG := $(KOKKOS_INTERNAL_CUDA_ARCH_FLAG)=sm_90
     endif
-  endif
-endif
+  #endif
+#endif
 
 ifneq ($(KOKKOS_INTERNAL_USE_ARCH_NVIDIA), 0)
   KOKKOS_CXXFLAGS += $(KOKKOS_INTERNAL_CUDA_ARCH_FLAG)
