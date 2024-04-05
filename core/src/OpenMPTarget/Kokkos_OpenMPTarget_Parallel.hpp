@@ -26,6 +26,10 @@
 #include "Kokkos_OpenMPTarget_Abort.hpp"
 #include <OpenMPTarget/Kokkos_OpenMPTarget_Macros.hpp>
 
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+#include <ompx.h>
+#endif
+
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 
@@ -283,8 +287,13 @@ class OpenMPTargetExecTeamMember {
 #endif
     m_reduce_scratch = static_cast<char*>(glb_scratch) + reduce_offset;
     m_league_rank    = league_rank;
-    m_team_rank      = omp_tid;
-    m_vector_lane    = 0;
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+    m_team_rank   = ompx::thread_id(ompx::dim_y);
+    m_vector_lane = ompx::thread_id(ompx::dim_x);
+#else
+    m_team_rank   = omp_tid;
+    m_vector_lane = 0;
+#endif
   }
 
   static inline int team_reduce_size() { return TEAM_REDUCE_SIZE; }
@@ -357,10 +366,12 @@ class TeamPolicyInternal<Kokkos::Experimental::OpenMPTarget, Properties...>
     m_league_size = league_size_request;
 
     // Minimum team size should be 32 for OpenMPTarget backend.
+#if !defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
     if (team_size_request < 32) {
       Kokkos::Impl::OpenMPTarget_abort(
           "OpenMPTarget backend requires a minimum of 32 threads per team.\n");
     } else
+#endif
       m_team_size = team_size_request;
 
     m_vector_length = vector_length_request;

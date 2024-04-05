@@ -29,6 +29,12 @@
 #if defined(KOKKOS_COMPILER_CLANG) && (KOKKOS_COMPILER_CLANG >= 1700) && \
     (defined(KOKKOS_ARCH_AMD_GPU) || defined(KOKKOS_IMPL_ARCH_NVIDIA_GPU))
 #define KOKKOS_IMPL_OPENMPTARGET_LLVM_EXTENSIONS
+
+// Macro for OpenMPTarget Kernel mode.
+#if (KOKKOS_COMPILER_CLANG >= 1900)
+#define KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE
+#endif
+
 #endif
 
 #define KOKKOS_IMPL_OPENMPTARGET_PRAGMA_HELPER(x) _Pragma(#x)
@@ -37,7 +43,7 @@
 
 // Use scratch memory extensions to request dynamic shared memory for the
 // right compiler/architecture combination.
-#ifdef KOKKOS_IMPL_OPENMPTARGET_LLVM_EXTENSIONS
+#if defined(KOKKOS_IMPL_OPENMPTARGET_LLVM_EXTENSIONS)
 #define KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(N) ompx_dyn_cgroup_mem(N)
 #else
 #define KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(N)
