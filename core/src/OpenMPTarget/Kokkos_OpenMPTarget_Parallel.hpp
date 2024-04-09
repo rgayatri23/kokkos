@@ -248,7 +248,9 @@ class OpenMPTargetExecTeamMember {
         m_vector_length(vector_length),
         m_shmem_block_index(shmem_block_index),
         m_glb_scratch(glb_scratch) {
+#if !defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
     const int omp_tid = omp_get_thread_num();
+#endif
 
     // The scratch memory allocated is a sum of TEAM_REDUCE_SIZE, L0 shmem size
     // and L1 shmem size. TEAM_REDUCE_SIZE = 512 bytes saved per team for

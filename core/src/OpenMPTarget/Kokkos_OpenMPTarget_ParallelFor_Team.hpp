@@ -189,17 +189,18 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
 #endif
       const int blockIdx = ompx::block_id(ompx::dim_x);
       const int gridDimx = ompx::grid_dim(ompx::dim_x);
+      const int blockDimy = ompx::block_dim(ompx::dim_y);
+      const int blockDimx = ompx::block_dim(ompx::dim_x);
 
-      //        printf("In OpenMPTarget Kernel Mode: blockIdx = %d, blockIdy =
-      //        %d, blockIdz = %d", blockIdx, blockIdy, blockIdz);
+              //printf("In OpenMPTarget Kernel Mode: blockIdx = %d, gridDimx =%d, blockDimy = %d, blockDimx=%d", blockIdx, gridDimx, blockDimy, blockDimx);
 
       // Iterate through the number of teams until league_size and assign the
       // league_id accordingly
       // Guarantee that the compilers respect the `num_teams` clause
       for (int league_id = blockIdx; league_id < league_size;
            league_id += gridDimx) {
-        typename Policy::member_type team(league_id, league_size, team_size,
-                                          vector_length, scratch_ptr, blockIdx,
+        typename Policy::member_type team(league_id, league_size, blockDimy,
+                                          blockDimx, scratch_ptr, blockIdx,
                                           shmem_size_L0, shmem_size_L1);
         if constexpr (std::is_void_v<TagType>)
           m_functor(team);

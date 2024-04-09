@@ -235,7 +235,7 @@ KOKKOS_INLINE_FUNCTION void parallel_reduce(
   if constexpr (std::is_arithmetic<ValueType>::value) {
 #if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
     double* buf =
-        static_cast<ValueType>(llvm_omp_target_dynamic_shared_alloc());
+        static_cast<ValueType*>(llvm_omp_target_dynamic_shared_alloc());
 
     const int blockDimx                    = ompx::block_dim(ompx::dim_x);
     const int threadIdx                    = ompx::thread_id(ompx::dim_x);
