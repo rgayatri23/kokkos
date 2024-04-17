@@ -84,6 +84,9 @@ class OpenMPTargetExecTeamMember {
   KOKKOS_INLINE_FUNCTION void* impl_reduce_scratch() const {
     return m_reduce_scratch;
   }
+  KOKKOS_INLINE_FUNCTION size_t impl_scratch_level0() const {
+    return m_team_scratch_size[0];
+  }
 
   KOKKOS_INLINE_FUNCTION void team_barrier() const {
 #pragma omp barrier

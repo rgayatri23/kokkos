@@ -89,7 +89,9 @@ int OpenMPTargetInternal::concurrency() const {
   max_threads *= 32;
 #endif
 
-  return max_threads;
+  // Multiply the max threads by 4 times to increase concurrency past hardware
+  // thread limit.
+  return (max_threads * 4);
 }
 const char* OpenMPTargetInternal::name() { return "OpenMPTarget"; }
 void OpenMPTargetInternal::print_configuration(std::ostream& os,

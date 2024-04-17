@@ -187,12 +187,14 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
         const int threadIdy  = ompx::thread_id(ompx::dim_y);
         const int threadIdz  = ompx::thread_id(ompx::dim_z);
 #endif
-      const int blockIdx = ompx::block_id(ompx::dim_x);
-      const int gridDimx = ompx::grid_dim(ompx::dim_x);
+      const int blockIdx  = ompx::block_id(ompx::dim_x);
+      const int gridDimx  = ompx::grid_dim(ompx::dim_x);
       const int blockDimy = ompx::block_dim(ompx::dim_y);
       const int blockDimx = ompx::block_dim(ompx::dim_x);
 
-              //printf("In OpenMPTarget Kernel Mode: blockIdx = %d, gridDimx =%d, blockDimy = %d, blockDimx=%d", blockIdx, gridDimx, blockDimy, blockDimx);
+      // printf("In OpenMPTarget Kernel Mode: blockIdx = %d, gridDimx =%d,
+      // blockDimy = %d, blockDimx=%d", blockIdx, gridDimx, blockDimy,
+      // blockDimx);
 
       // Iterate through the number of teams until league_size and assign the
       // league_id accordingly
