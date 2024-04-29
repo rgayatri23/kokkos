@@ -110,6 +110,34 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
   }
 
  private:
+  //template<VECTOR_LENGTH = 8, auto TEAM_SIZE = 16, auto MAX_ACTIVE_TEAMS = 40960>
+  //static void ompx_kernel_launch(auto a_functor, size_t shmem_size_L0, size_t shmem_size_L1, void* scratch_ptr)
+  //{
+    //KOKKOS_IMPL_OMPTARGET_PRAGMA(
+        //teams ompx_bare thread_limit(VECTOR_LENGTH, TEAM_SIZE, 1) firstprivate(
+            //league_size, a_functor, shmem_size_L0, shmem_size_L1, a_functor,
+            //scratch_ptr) num_teams(MAX_ACTIVE_TEAMS, 1, 1)
+            //KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(scratch_length)) {
+      //const int blockIdx  = ompx::block_id(ompx::dim_x);
+      //const int gridDimx  = ompx::grid_dim(ompx::dim_x);
+      //const int blockDimy = ompx::block_dim(ompx::dim_y);
+      //const int blockDimx = ompx::block_dim(ompx::dim_x);
+
+      //// Iterate through the number of teams until league_size and assign the
+      //// league_id accordingly
+      //// Guarantee that the compilers respect the `num_teams` clause
+      //for (int league_id = blockIdx; league_id < league_size;
+           //league_id += gridDimx) {
+        //typename Policy::member_type team(league_id, league_size, blockDimy,
+                                          //blockDimx, scratch_ptr, blockIdx,
+                                          //shmem_size_L0, shmem_size_L1);
+        //if constexpr (std::is_void_v<TagType>)
+          //a_functor(team);
+        //else
+          //a_functor(TagType(), team);
+      //}
+    //}
+  //}
   template <class TagType>
   void execute_impl() const {
     OpenMPTargetExec::verify_is_process(
@@ -192,10 +220,6 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
       const int blockDimy = ompx::block_dim(ompx::dim_y);
       const int blockDimx = ompx::block_dim(ompx::dim_x);
 
-      // printf("In OpenMPTarget Kernel Mode: blockIdx = %d, gridDimx =%d,
-      // blockDimy = %d, blockDimx=%d", blockIdx, gridDimx, blockDimy,
-      // blockDimx);
-
       // Iterate through the number of teams until league_size and assign the
       // league_id accordingly
       // Guarantee that the compilers respect the `num_teams` clause
@@ -221,7 +245,7 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
     KOKKOS_IMPL_OMPTARGET_PRAGMA(
         teams thread_limit(team_size) firstprivate(a_functor)
             num_teams(max_active_teams) is_device_ptr(scratch_ptr)
-                KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(shmem_size_L0))
+                KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(scratch_length))
 #pragma omp parallel
     {
       if (omp_get_num_teams() > max_active_teams)
