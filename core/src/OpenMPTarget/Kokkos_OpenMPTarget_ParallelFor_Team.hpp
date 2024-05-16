@@ -157,8 +157,6 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
 #if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
     const size_t scratch_length =
         shmem_size_L0 + team_size * vector_length * sizeof(size_t);
-#else
-    const size_t scratch_length = shmem_size_L0;
 #endif
 
     void* scratch_ptr = OpenMPTargetExec::get_scratch_ptr();
@@ -246,7 +244,7 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
     KOKKOS_IMPL_OMPTARGET_PRAGMA(
         teams thread_limit(team_size) firstprivate(a_functor)
             num_teams(max_active_teams) is_device_ptr(scratch_ptr)
-                KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(scratch_length))
+                KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(shmem_size_L0))
 #pragma omp parallel
     {
       if (omp_get_num_teams() > max_active_teams)
