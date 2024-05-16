@@ -232,14 +232,54 @@ KOKKOS_INLINE_FUNCTION void parallel_reduce(
         iType, Impl::OpenMPTargetExecTeamMember>& loop_boundaries,
     const Lambda& lambda, ValueType& result) {
   ValueType vector_reduce = ValueType();
-
   if constexpr (std::is_arithmetic<ValueType>::value) {
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+    size_t scratch_0 = loop_boundaries.team.impl_scratch_level0();
+    double* buf =
+        static_cast<ValueType*>(llvm_omp_target_dynamic_shared_alloc()) +
+        scratch_0;
+
+    const int blockDimx                    = ompx::block_dim(ompx::dim_x);
+    const int threadIdx                    = ompx::thread_id(ompx::dim_x);
+    const int threadIdy                    = ompx::thread_id(ompx::dim_y);
+    buf[threadIdy * blockDimx + threadIdx] = ValueType();
+
+    for (iType i = loop_boundaries.start + threadIdx; i < loop_boundaries.end;
+         i += blockDimx) {
+      ValueType tmp = ValueType();
+      lambda(i, tmp);
+      buf[threadIdy * blockDimx + threadIdx] += tmp;
+    }
+    ompx_sync_block_acq_rel();
+
+    // Sum up the update
+    // if (threadIdx == 0) {
+    // for (int tid = 0; tid < blockDimx; ++tid)
+    // vector_reduce += buf[threadIdy * blockDimx + tid];
+    //}
+    // ompx_sync_block_acq_rel();
+
+    vector_reduce = buf[threadIdy * blockDimx + threadIdx];
+    // if(blockDimx == 8)
+    //{
+    // vector_reduce += ompx::shfl_down_sync(-1, vector_reduce, 4);
+    // vector_reduce += ompx::shfl_down_sync(-1, vector_reduce, 2);
+    // vector_reduce += ompx::shfl_down_sync(-1, vector_reduce, 1);
+    //}
+    // else{
+    for (int offset = blockDimx / 2; offset > 0; offset /= 2) {
+      vector_reduce += ompx::shfl_down_sync(-1, vector_reduce, offset);
+    }
+    //}
+
+#else
 #pragma omp simd reduction(+ : vector_reduce)
     for (iType i = loop_boundaries.start; i < loop_boundaries.end; i++) {
       ValueType tmp = ValueType();
       lambda(i, tmp);
       vector_reduce += tmp;
     }
+#endif
   } else {
 #pragma omp declare reduction(custom:ValueType : omp_out += omp_in)
 
