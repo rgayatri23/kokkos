@@ -31,6 +31,8 @@
 #define KOKKOS_IMPL_HIERARCHICAL_REDUCERS_WORKAROUND
 #endif
 
+#define ompx_shfl
+
 namespace Kokkos {
 
 /** \brief  Inter-thread vector parallel_reduce. Executes lambda(iType i,
@@ -243,6 +245,7 @@ KOKKOS_INLINE_FUNCTION void parallel_reduce(
     const int threadIdx                    = ompx::thread_id(ompx::dim_x);
     const int threadIdy                    = ompx::thread_id(ompx::dim_y);
     buf[threadIdy * blockDimx + threadIdx] = ValueType();
+    ompx_sync_block_acq_rel();
 
     for (iType i = loop_boundaries.start + threadIdx; i < loop_boundaries.end;
          i += blockDimx) {
@@ -253,13 +256,19 @@ KOKKOS_INLINE_FUNCTION void parallel_reduce(
     ompx_sync_block_acq_rel();
 
     // Sum up the update
-    // if (threadIdx == 0) {
-    // for (int tid = 0; tid < blockDimx; ++tid)
-    // vector_reduce += buf[threadIdy * blockDimx + tid];
-    //}
-    // ompx_sync_block_acq_rel();
-
+#if defined(ompx_shfl)
     vector_reduce = buf[threadIdy * blockDimx + threadIdx];
+     for (int offset = blockDimx / 2; offset > 0; offset /= 2) {
+     vector_reduce += ompx::shfl_down_sync(-1, vector_reduce, offset);
+    }
+#else
+    if (threadIdx == 0) {
+      for (int tid = 0; tid < blockDimx; ++tid)
+        vector_reduce += buf[threadIdy * blockDimx + tid];
+    }
+#endif
+    ompx_sync_block_acq_rel();
+
     // if(blockDimx == 8)
     //{
     // vector_reduce += ompx::shfl_down_sync(-1, vector_reduce, 4);
@@ -267,9 +276,9 @@ KOKKOS_INLINE_FUNCTION void parallel_reduce(
     // vector_reduce += ompx::shfl_down_sync(-1, vector_reduce, 1);
     //}
     // else{
-    for (int offset = blockDimx / 2; offset > 0; offset /= 2) {
-      vector_reduce += ompx::shfl_down_sync(-1, vector_reduce, offset);
-    }
+    // for (int offset = blockDimx / 2; offset > 0; offset /= 2) {
+    // vector_reduce += ompx::shfl_down_sync(-1, vector_reduce, offset);
+    //}
     //}
 
 #else
