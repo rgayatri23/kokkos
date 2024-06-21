@@ -263,14 +263,20 @@ KOKKOS_INLINE_FUNCTION void parallel_reduce(
     }
 #else
     if (threadIdx == 0) {
-      for (int tid = threadIdx; tid < blockDimx; ++tid)
+      for (int tid = 0; tid < blockDimx; ++tid)
         vector_reduce += buf[threadIdy * blockDimx + tid];
+
+       buf[threadIdy * blockDimx] = vector_reduce;
     }
 #endif
     ompx_sync_block_acq_rel();
 
+    // The thread that has the final update stores it in a common location.
     if (threadIdx == 0) buf[threadIdy * blockDimx] = vector_reduce;
     ompx_sync_block_acq_rel();
+
+    // Since we do not know which thread would do the ultimate write. Every thread should have the final value.
+    result = buf[threadIdy*blockDimx];
 
     // if(blockDimx == 8)
     //{
@@ -291,6 +297,7 @@ KOKKOS_INLINE_FUNCTION void parallel_reduce(
       lambda(i, tmp);
       vector_reduce += tmp;
     }
+  result = vector_reduce;
 #endif
   } else {
 #pragma omp declare reduction(custom:ValueType : omp_out += omp_in)
@@ -299,9 +306,9 @@ KOKKOS_INLINE_FUNCTION void parallel_reduce(
     for (iType i = loop_boundaries.start; i < loop_boundaries.end; i++) {
       lambda(i, vector_reduce);
     }
+  result = vector_reduce;
   }
 
-  result = vector_reduce;
 }
 
 template <typename iType, class Lambda, typename ReducerType>
