@@ -172,7 +172,7 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
 #if !defined(KOKKOS_COMPILER_CRAY_LLVM)
     int max_active_teams = omp_get_max_teams();
 #else
-    int max_active_teams        = std::min(
+    int max_active_teams = std::min(
         OpenMPTargetExec::MAX_ACTIVE_THREADS / vector_length * team_size,
         league_size);
 #endif

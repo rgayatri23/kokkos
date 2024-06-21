@@ -258,15 +258,18 @@ KOKKOS_INLINE_FUNCTION void parallel_reduce(
     // Sum up the update
 #if defined(ompx_shfl)
     vector_reduce = buf[threadIdy * blockDimx + threadIdx];
-     for (int offset = blockDimx / 2; offset > 0; offset /= 2) {
-     vector_reduce += ompx::shfl_down_sync(-1, vector_reduce, offset);
+    for (int offset = blockDimx / 2; offset > 0; offset /= 2) {
+      vector_reduce += ompx::shfl_down_sync(-1, vector_reduce, offset);
     }
 #else
     if (threadIdx == 0) {
-      for (int tid = 0; tid < blockDimx; ++tid)
+      for (int tid = threadIdx; tid < blockDimx; ++tid)
         vector_reduce += buf[threadIdy * blockDimx + tid];
     }
 #endif
+    ompx_sync_block_acq_rel();
+
+    if (threadIdx == 0) buf[threadIdy * blockDimx] = vector_reduce;
     ompx_sync_block_acq_rel();
 
     // if(blockDimx == 8)
