@@ -246,6 +246,49 @@ class ParallelFor<FunctorType, Kokkos::MDRangePolicy<Traits...>,
     const Index end_1 = policy.m_upper[1];
     const Index end_2 = policy.m_upper[2];
 
+
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+    const Index tot = (end_2-begin_2) * (end_1-begin_1) * (end_0-begin_0);
+
+    auto tot_inner = (end_1 - begin_1) * (end_0 - begin_0);
+    auto tot_outer = (end_2 - begin_2) * tot_inner;
+
+//#pragma omp target teams distribute parallel for map(to : functor)
+    //for (auto iter2 = 0; iter2 < tot_outer; ++iter2) {
+//      if(omp_get_team_num() == 0 && omp_get_num_threads() == 0)
+//      printf("num_teams = %d, team_size = %d, thread)id = %d\n", omp_get_num_teams(), omp_get_num_threads(), omp_get_num_threads());
+
+    constexpr const int team_size = 1;
+    const int num_teams  = (tot_outer + team_size - 1) / team_size * team_size;
+
+      printf("tot_outer = %d\n", tot_outer);
+
+    for (auto tmp = 0; tmp < tot_outer; ++tmp) {
+#pragma omp target teams ompx_bare thread_limit(1) num_teams(1) map(to:functor) firstprivate(tot_outer)
+{
+  const Index blockDimx = ompx::block_dim(ompx::dim_x);
+  const Index blockIdx  = ompx::block_id(ompx::dim_x);
+  const Index threadIdx  = ompx::thread_id(ompx::dim_x);
+
+  auto iter2 = tmp; //+ blockDimx * blockIdx + threadIdx;
+  if (iter2 < tot_outer) {
+          auto i2 = iter2 / tot_inner;
+          auto iter = iter2 % tot_inner;
+
+          auto i1 = iter / (end_0 - begin_0);
+          auto i0 = iter % (end_0 - begin_0);
+
+//        printf("(i0,i1,i2) = (%d,%d,%d)\n", i0,i1,i2);
+//        printf("blockIdx = %d, iter2 = %d\n", blockIdx, iter2);
+
+          if constexpr (std::is_void<typename Policy::work_tag>::value)
+            functor(i0, i1, i2);
+          else
+            functor(typename Policy::work_tag(), i0, i1, i2);
+      }
+      }
+}
+#else
 #pragma omp target teams distribute parallel for collapse(3) map(to : functor)
     for (auto i2 = begin_2; i2 < end_2; ++i2) {
       for (auto i1 = begin_1; i1 < end_1; ++i1) {
@@ -257,6 +300,8 @@ class ParallelFor<FunctorType, Kokkos::MDRangePolicy<Traits...>,
         }
       }
     }
+#endif
+
   }
 
   template <int Rank>
