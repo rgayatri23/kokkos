@@ -8,5 +8,6 @@ jobs:
     name: kk-testing
     runs-on: kk-pm-login23
     steps:
-      run: |
-        echo "Hello World"
+      - name: Hello World
+        run: |
+          echo "Hello World"
