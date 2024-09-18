@@ -4,10 +4,28 @@ on: [push, pull_request]
 
 jobs:
   # Build libamrex and all tests with CUDA 11.2
-  tests-cuda:
-    name: kk-testing
+  hello-world:
+    name: hello-world
     runs-on: kk-pm-login23
     steps:
       - name: Hello World
         run: |
           echo "Hello World"
+      - name: Configure Kokkos
+        run: |
+          cmake -B builddir \
+            -DKokkos_ENABLE_HWLOC=ON \
+            -DKokkos_ENABLE_${{ matrix.backend }}=ON \
+            -DKokkos_ENABLE_BENCHMARKS=ON \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: |
+          ccache -z
+          NUM_CPU=$(grep -c processor /proc/cpuinfo)
+          cmake --build builddir --parallel ${NUM_CPU}
+          ccache -s
+      - name: Tests
+        working-directory: builddir
+        run: ctest --output-on-failure
