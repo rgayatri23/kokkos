@@ -1,0 +1,12 @@
+name: cuda
+
+on: [push, pull_request]
+
+jobs:
+  # Build libamrex and all tests with CUDA 11.2
+  tests-cuda:
+    name: kk-testing
+    runs-on: kk-pm-login23
+    steps:
+      run: |
+        echo "Hello World"
