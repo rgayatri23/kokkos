@@ -91,7 +91,6 @@ class ParallelFor<FunctorType, Kokkos::MDRangePolicy<Traits...>,
     const Index end_0 = policy.m_upper[0];
     const Index end_1 = policy.m_upper[1];
     const Index end_2 = policy.m_upper[2];
-
 #pragma omp target teams distribute parallel for collapse(3) map(to : functor)
     for (auto i0 = begin_0; i0 < end_0; ++i0) {
       for (auto i1 = begin_1; i1 < end_1; ++i1) {
@@ -245,6 +244,48 @@ class ParallelFor<FunctorType, Kokkos::MDRangePolicy<Traits...>,
     const Index end_0 = policy.m_upper[0];
     const Index end_1 = policy.m_upper[1];
     const Index end_2 = policy.m_upper[2];
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+    const Index total_elements = (end_0-begin_0) * (end_1-begin_1) * (end_2-begin_2);
+    const int team_size = 32;
+    if(!total_elements) return;
+    int nteams = (total_elements%team_size) ? total_elements/team_size +1: total_elements/team_size;
+
+#pragma omp target teams ompx_bare num_teams(nteams,1,1) thread_limit(team_size,1,1) firstprivate(functor)
+    {
+      const Index blockIdx  = ompx::block_id(ompx::dim_x);
+      const Index blockDimx = ompx::block_dim(ompx::dim_x);
+      const Index gridDimx = ompx::grid_dim(ompx::dim_x);
+      const Index threadIdx = ompx::thread_id(ompx::dim_x);
+      const Index tid = blockIdx * team_size + threadIdx;
+
+      const Index i0 = tid / (end_1*end_2) + begin_0;
+      const Index i1_ = tid % (end_1*end_2);
+      const Index i1 = i1_ / end_2 + begin_1;
+      const Index i2 = i1_ % end_2 + begin_2;
+
+      {
+        if constexpr (std::is_void<typename Policy::work_tag>::value)
+          functor(i0, i1, i2);
+        else
+          functor(typename Policy::work_tag(), i0, i1, i2);
+      }
+    }
+    
+/*#pragma omp target teams distribute parallel for firstprivate(functor)*/
+/*    for(int index = 0; index < total_elements; ++index)*/
+/*    {*/
+/*        const int i0 = index / (end_1*end_2);*/
+/*        const int i1_ = index % (end_1*end_2);*/
+/*        const int i1 = i1_ / end_2;*/
+/*        const int i2 = i1_ % end_2;*/
+/*          if constexpr (std::is_void<typename Policy::work_tag>::value)*/
+/*            functor(i0, i1, i2);*/
+/*          else*/
+/*            functor(typename Policy::work_tag(), i0, i1, i2);*/
+/*    }*/
+
+
+#else
 
 #pragma omp target teams distribute parallel for collapse(3) map(to : functor)
     for (auto i2 = begin_2; i2 < end_2; ++i2) {
@@ -257,6 +298,7 @@ class ParallelFor<FunctorType, Kokkos::MDRangePolicy<Traits...>,
         }
       }
     }
+#endif
   }
 
   template <int Rank>

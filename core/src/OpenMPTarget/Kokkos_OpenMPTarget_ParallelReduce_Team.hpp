@@ -237,7 +237,7 @@ KOKKOS_INLINE_FUNCTION void parallel_reduce(
   if constexpr (std::is_arithmetic<ValueType>::value) {
 #if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
     size_t scratch_0 = loop_boundaries.team.impl_scratch_level0();
-    double* buf =
+    ValueType* buf =
         static_cast<ValueType*>(llvm_omp_target_dynamic_shared_alloc()) +
         scratch_0;
 
