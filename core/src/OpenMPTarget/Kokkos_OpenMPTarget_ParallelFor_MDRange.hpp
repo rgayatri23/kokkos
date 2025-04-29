@@ -248,7 +248,7 @@ class ParallelFor<FunctorType, Kokkos::MDRangePolicy<Traits...>,
 
     // All collapsed
     const Index total_elements = (end_0-begin_0) * (end_1-begin_1) * (end_2-begin_2);
-    const int team_size = 32;
+    const int team_size = 128;
     if(!total_elements) return;
     int nteams = (total_elements%team_size) ? total_elements/team_size +1: total_elements/team_size;
 #pragma omp target teams ompx_bare num_teams(nteams,1,1) thread_limit(team_size,1,1) firstprivate(functor)
