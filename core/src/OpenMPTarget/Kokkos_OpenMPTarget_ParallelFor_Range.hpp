@@ -51,6 +51,22 @@ class ParallelFor<FunctorType, Kokkos::RangePolicy<Traits...>,
 
     FunctorType a_functor(m_functor);
 
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+    const int team_size=128;
+    const int size = end - begin;
+    int nteams = size / team_size + !!(size % team_size);
+
+    #pragma omp target teams ompx_bare num_teams(nteams) thread_limit(team_size)
+    {
+      auto i = ompx::thread_id(ompx::dim_x) + ompx::block_dim(ompx::dim_x) * ompx::block_id(ompx::dim_x) + begin;
+      if constexpr (std::is_void<TagType>::value) {
+        a_functor(i);
+      } else {
+        a_functor(TagType(), i);
+      }
+    }
+
+#else
 #pragma omp target teams distribute parallel for map(to : a_functor)
     for (auto i = begin; i < end; ++i) {
       if constexpr (std::is_void<TagType>::value) {
@@ -59,6 +75,7 @@ class ParallelFor<FunctorType, Kokkos::RangePolicy<Traits...>,
         a_functor(TagType(), i);
       }
     }
+#endif
   }
 
   ParallelFor(const FunctorType& arg_functor, Policy arg_policy)
