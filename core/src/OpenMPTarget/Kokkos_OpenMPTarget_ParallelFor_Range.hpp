@@ -59,10 +59,13 @@ class ParallelFor<FunctorType, Kokkos::RangePolicy<Traits...>,
     #pragma omp target teams ompx_bare num_teams(nteams) thread_limit(team_size)
     {
       auto i = ompx::thread_id(ompx::dim_x) + ompx::block_dim(ompx::dim_x) * ompx::block_id(ompx::dim_x) + begin;
+      if(i < end)
+      {
       if constexpr (std::is_void<TagType>::value) {
         a_functor(i);
       } else {
         a_functor(TagType(), i);
+      }
       }
     }
 

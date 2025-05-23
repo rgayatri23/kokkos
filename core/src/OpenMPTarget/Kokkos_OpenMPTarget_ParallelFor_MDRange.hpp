@@ -91,6 +91,39 @@ class ParallelFor<FunctorType, Kokkos::MDRangePolicy<Traits...>,
     const Index end_0 = policy.m_upper[0];
     const Index end_1 = policy.m_upper[1];
     const Index end_2 = policy.m_upper[2];
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+
+    // All collapsed
+    const Index total_elements = (end_0-begin_0) * (end_1-begin_1) * (end_2-begin_2);
+    if(!total_elements) return;
+
+    const int team_size = 128;
+    int nteams =  total_elements / team_size + !!(total_elements % team_size);
+
+#pragma omp target teams ompx_bare num_teams(nteams,1,1) thread_limit(team_size,1,1) firstprivate(functor)
+    {
+      const Index blockIdx  = ompx::block_id(ompx::dim_x);
+      const Index blockDimx = ompx::block_dim(ompx::dim_x);
+      const Index threadIdx = ompx::thread_id(ompx::dim_x);
+      const Index tid = blockIdx * blockDimx + threadIdx;
+
+      if(tid < total_elements)
+      {
+        Index iter_ = tid;
+
+        const int i0 = iter_ / (end_2*end_1) + begin_0;
+        const int i1_ = iter_ % (end_2*end_1);
+        const Index i1 = i1_ / end_2 + begin_1;
+        const Index i2 = i1_ % end_2  + begin_2;
+
+        if constexpr (std::is_void<typename Policy::work_tag>::value)
+          functor(i0, i1, i2);
+        else
+          functor(typename Policy::work_tag(), i0, i1, i2);
+      }
+    }
+
+#else
 #pragma omp target teams distribute parallel for collapse(3) map(to : functor)
     for (auto i0 = begin_0; i0 < end_0; ++i0) {
       for (auto i1 = begin_1; i1 < end_1; ++i1) {
@@ -102,6 +135,7 @@ class ParallelFor<FunctorType, Kokkos::MDRangePolicy<Traits...>,
         }
       }
     }
+#endif
   }
 
   template <int Rank>
@@ -249,46 +283,21 @@ class ParallelFor<FunctorType, Kokkos::MDRangePolicy<Traits...>,
     // All collapsed
     const Index total_elements = (end_0-begin_0) * (end_1-begin_1) * (end_2-begin_2);
     if(!total_elements) return;
-/*    const int team_size = 32;*/
-/*    int nteams = (total_elements%team_size) ? total_elements/team_size +1: total_elements/team_size;*/
-/*#pragma omp target teams ompx_bare num_teams(nteams,1,1) thread_limit(team_size,1,1) firstprivate(functor)*/
-/*    {*/
-/*      const Index blockIdx  = ompx::block_id(ompx::dim_x);*/
-/*      const Index blockDimx = ompx::block_dim(ompx::dim_x);*/
-/*      const Index gridDimx = ompx::grid_dim(ompx::dim_x);*/
-/*      const Index threadIdx = ompx::thread_id(ompx::dim_x);*/
-/*      const Index tid = blockIdx * team_size + threadIdx;*/
-/**/
-/*      const Index i2 = tid / (end_1*end_0) + begin_2;*/
-/*      const Index i1_ = tid % (end_1*end_0);*/
-/*      const Index i1 = i1_ / end_0 + begin_1;*/
-/*      const Index i0 = i1_ % end_0 + begin_0;*/
-/**/
-/*      if(tid < total_elements)*/
-/*      {*/
-/*        if constexpr (std::is_void<typename Policy::work_tag>::value)*/
-/*          functor(i0, i1, i2);*/
-/*        else*/
-/*          functor(typename Policy::work_tag(), i0, i1, i2);*/
-/*      }*/
-/*    }*/
-
-
-    int team_size_x = 16, team_size_y = 4, team_size_z = 2;
-    int size_0 = end_0-begin_0;
-    int nteams0 = size_0 / team_size_x + !!(size_0 % team_size_x);
-    int size_1 = end_1-begin_1;
-    int nteams1 = size_1 / team_size_y + !!(size_1 % team_size_y);
-    int size_2 = end_2-begin_2;
-    int nteams2 = size_2 / team_size_z + !!(size_2 % team_size_z);
-
-#pragma omp target teams ompx_bare num_teams(nteams0,nteams1,nteams2) thread_limit(team_size_x,team_size_y,team_size_z) firstprivate(functor)
+    const int team_size = 128;
+    int nteams = (total_elements%team_size) ? total_elements/team_size +1: total_elements/team_size;
+#pragma omp target teams ompx_bare num_teams(nteams,1,1) thread_limit(team_size,1,1) firstprivate(functor)
     {
-      Index i0 = ompx::thread_id(ompx::dim_x) + ompx::block_dim(ompx::dim_x) * ompx::block_id(ompx::dim_x) + begin_0;
-      Index i1 = ompx::thread_id(ompx::dim_y) + ompx::block_dim(ompx::dim_y) * ompx::block_id(ompx::dim_y) + begin_1;
-      Index i2 = ompx::thread_id(ompx::dim_z) + ompx::block_dim(ompx::dim_z) * ompx::block_id(ompx::dim_z) + begin_2;
+      const Index blockIdx  = ompx::block_id(ompx::dim_x);
+      const Index blockDimx = ompx::block_dim(ompx::dim_x);
+      const Index threadIdx = ompx::thread_id(ompx::dim_x);
+      const Index tid = blockIdx * team_size + threadIdx;
 
-      if(i0 < end_0 && i1 < end_1 && i2 < end_2)
+      const Index i2 = tid / (end_1*end_0) + begin_2;
+      const Index i1_ = tid % (end_1*end_0);
+      const Index i1 = i1_ / end_0 + begin_1;
+      const Index i0 = i1_ % end_0 + begin_0;
+
+      if(tid < total_elements)
       {
         if constexpr (std::is_void<typename Policy::work_tag>::value)
           functor(i0, i1, i2);

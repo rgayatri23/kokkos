@@ -36,6 +36,9 @@
 #include <sstream>
 
 namespace Kokkos {
+
+  char __attribute__((address_space(4))) _Alignas(16) ConstBuffer[4096];
+
 namespace Experimental {
 namespace Impl {
 uint32_t OpenMPTargetInternal::impl_get_instance_id() const noexcept {
