@@ -410,7 +410,7 @@ TEST(std_algorithms_numeric_ops_test, transform_inclusive_scan_functor) {
     test_lambda(functor);
   }
 }
-#endif
+#endif // FIXME_OPENMPTARGET
 
 }  // namespace TransformIncScan
 }  // namespace stdalgos
