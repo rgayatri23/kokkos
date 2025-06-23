@@ -342,7 +342,6 @@ TEST(std_algorithms_numeric_ops_test, transform_inclusive_scan) {
   run_all_scenarios<DynamicTag, int>();
   run_all_scenarios<StridedThreeTag, int>();
 }
-#endif
 
 template <class ValueType>
 struct MultiplyFunctor {
@@ -411,6 +410,7 @@ TEST(std_algorithms_numeric_ops_test, transform_inclusive_scan_functor) {
     test_lambda(functor);
   }
 }
+#endif
 
 }  // namespace TransformIncScan
 }  // namespace stdalgos
