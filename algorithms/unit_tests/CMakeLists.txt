@@ -207,7 +207,7 @@ foreach(
   list(APPEND STDALGO_TEAM_SOURCES_H Test${Name}.cpp)
 endforeach()
 
-if(KOKKOS_ENABLE_OPENMPTARGET)
+if(KOKKOS_ENABLE_OPENMPTARGET) # FIXME
   list(REMOVE_ITEM STDALGO_TEAM_SOURCES_H
     TestStdAlgorithmsTeamCopyIf.cpp
     TestStdAlgorithmsTeamUniqueCopy.cpp
