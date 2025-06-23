@@ -150,7 +150,7 @@ set(STDALGO_TEAM_SOURCES_P)
 foreach(Name StdAlgorithmsCommon StdAlgorithmsTeamExclusiveScan StdAlgorithmsTeamTransformExclusiveScan)
   list(APPEND STDALGO_TEAM_SOURCES_P Test${Name}.cpp)
 endforeach()
-if(KOKKOS_ENABLE_OPENMPTARGET)
+if(KOKKOS_ENABLE_OPENMPTARGET) # FIXME
   list(REMOVE_ITEM STDALGO_TEAM_SOURCES_P
     TestStdAlgorithmsTeamExclusiveScan.cpp
     TestStdAlgorithmsTeamTransformExclusiveScan.cpp
