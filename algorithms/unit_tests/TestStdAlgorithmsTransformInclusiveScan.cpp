@@ -335,7 +335,7 @@ void run_all_scenarios() {
   }
 }
 
-#if !defined KOKKOS_ENABLE_OPENMPTARGET
+#if !defined KOKKOS_ENABLE_OPENMPTARGET // FIXME_OPENMPTARGET
 TEST(std_algorithms_numeric_ops_test, transform_inclusive_scan) {
   run_all_scenarios<DynamicTag, double>();
   run_all_scenarios<StridedThreeTag, double>();
@@ -410,7 +410,7 @@ TEST(std_algorithms_numeric_ops_test, transform_inclusive_scan_functor) {
     test_lambda(functor);
   }
 }
-#endif // FIXME_OPENMPTARGET
+#endif
 
 }  // namespace TransformIncScan
 }  // namespace stdalgos

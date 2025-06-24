@@ -150,7 +150,7 @@ set(STDALGO_TEAM_SOURCES_P)
 foreach(Name StdAlgorithmsCommon StdAlgorithmsTeamExclusiveScan StdAlgorithmsTeamTransformExclusiveScan)
   list(APPEND STDALGO_TEAM_SOURCES_P Test${Name}.cpp)
 endforeach()
-if(KOKKOS_ENABLE_OPENMPTARGET) # FIXME
+if(KOKKOS_ENABLE_OPENMPTARGET) # FIXME_OPENMPTARGET
   list(REMOVE_ITEM STDALGO_TEAM_SOURCES_P
     TestStdAlgorithmsTeamExclusiveScan.cpp
     TestStdAlgorithmsTeamTransformExclusiveScan.cpp
@@ -207,7 +207,7 @@ foreach(
   list(APPEND STDALGO_TEAM_SOURCES_H Test${Name}.cpp)
 endforeach()
 
-if(KOKKOS_ENABLE_OPENMPTARGET) # FIXME
+if(KOKKOS_ENABLE_OPENMPTARGET) # FIXME_OPENMPTARGET
   list(REMOVE_ITEM STDALGO_TEAM_SOURCES_H
     TestStdAlgorithmsTeamCopyIf.cpp
     TestStdAlgorithmsTeamUniqueCopy.cpp
@@ -340,26 +340,9 @@ if(KOKKOS_ENABLE_OPENMPTARGET)
   )
 endif()
 
-# FIXME_OPENMPTARGET This test causes internal compiler errors as of 09/01/22
-# when compiling for Intel's Xe-HP GPUs.
-# FRIZZI: 04/26/2023: not sure if the compilation error is still applicable
-# but we conservatively leave this guard on
-if(NOT (KOKKOS_ENABLE_OPENMPTARGET AND KOKKOS_CXX_COMPILER_ID STREQUAL IntelLLVM))
-  kokkos_add_executable_and_test(
-    UnitTest_Sort SOURCES UnitTestMain.cpp TestStdAlgorithmsCommon.cpp ${ALGO_SORT_SOURCES}
-  )
+kokkos_add_executable_and_test(UnitTest_Sort SOURCES UnitTestMain.cpp TestStdAlgorithmsCommon.cpp ${ALGO_SORT_SOURCES})
 
-  kokkos_add_executable_and_test(UnitTest_Random SOURCES UnitTestMain.cpp ${ALGO_RANDOM_SOURCES})
-endif()
-
-# FIXME_OPENMPTARGET: These tests cause internal compiler errors as of 09/01/22
-# when compiling for Intel's Xe-HP GPUs.
-if(KOKKOS_ENABLE_OPENMPTARGET AND KOKKOS_CXX_COMPILER_ID STREQUAL IntelLLVM)
-  list(REMOVE_ITEM STDALGO_SOURCES_D TestStdAlgorithmsCopyIf.cpp TestStdAlgorithmsRemoveCopy.cpp
-       TestStdAlgorithmsUnique.cpp TestStdAlgorithmsUniqueCopy.cpp
-  )
-  list(REMOVE_ITEM STDALGO_SOURCES_E TestStdAlgorithmsExclusiveScan.cpp TestStdAlgorithmsInclusiveScan.cpp)
-endif()
+kokkos_add_executable_and_test(UnitTest_Random SOURCES UnitTestMain.cpp ${ALGO_RANDOM_SOURCES})
 
 # FIXME_OPENMPTARGET remove tests for OpenMPTarget
 # causing failures for various reasons
@@ -389,8 +372,4 @@ foreach(ID A;B;C;D;E;F;G;H;I;L;M;P;Q)
   )
 endforeach()
 
-# FIXME_OPENMPTARGET This test causes internal compiler errors as of 09/01/22
-# when compiling for Intel's Xe-HP GPUs.
-if(NOT (KOKKOS_ENABLE_OPENMPTARGET AND KOKKOS_CXX_COMPILER_ID STREQUAL IntelLLVM))
-  kokkos_add_executable(AlgorithmsUnitTest_StdAlgoCompileOnly SOURCES TestStdAlgorithmsCompileOnly.cpp)
-endif()
+kokkos_add_executable(AlgorithmsUnitTest_StdAlgoCompileOnly SOURCES TestStdAlgorithmsCompileOnly.cpp)
