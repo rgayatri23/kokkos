@@ -28,7 +28,7 @@ EPYC-OMP-gcc:
     - module load PrgEnv-gnu gcc/12.2.0
     - export BUILD_DIR=${SOURCE_DIR}/build_omp_gcc
     - export ENV_CMAKE_OPTIONS="${ENV_KOKKOS_OPTIONS}"
-    - export ENV_CMAKE_OPTIONS="${ENV_CMAKE_OPTIONS};-D CMAKE_CXX_FLAGS='--all-warnings -Werror'"
+    - export ENV_CMAKE_OPTIONS="${ENV_CMAKE_OPTIONS};-D CMAKE_CXX_FLAGS='-Werror'"
     - export ENV_CMAKE_OPTIONS="${ENV_CMAKE_OPTIONS};-DCMAKE_CXX_COMPILER=g++"
     - export ENV_CMAKE_OPTIONS="${ENV_CMAKE_OPTIONS};-DKokkos_ARCH_ZEN3=ON"
     - export ENV_CMAKE_OPTIONS="${ENV_CMAKE_OPTIONS};-DKokkos_ENABLE_OPENMP=ON"
