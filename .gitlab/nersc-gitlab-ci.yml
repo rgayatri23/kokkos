@@ -34,17 +34,17 @@ EPYC-OMP-gcc:
     - export ENV_CMAKE_OPTIONS="${ENV_CMAKE_OPTIONS};-DKokkos_ENABLE_OPENMP=ON"
     - ctest -VV -D CDASH_MODEL="Nightly" -D CTEST_SITE="nersc" -D CMAKE_OPTIONS="${ENV_CMAKE_OPTIONS}" -S ${SCRIPT_FILE} -D CTEST_BUILD_NAME="AMD-EPYC-OpenMP-gcc/12.2"
 
-# A100-CUDA-nvcc:
-#   stage: test
-#   script:
-#     - echo "Kokkos-CUDA tests by $GITLAB_USER_LOGIN using nvcc."
-#     - module load PrgEnv-gnu gcc/12.2.0
-#     - export BUILD_DIR=${SOURCE_DIR}/build_cuda_nvcc
-#     - export ENV_CMAKE_OPTIONS="${ENV_KOKKOS_OPTIONS}"
-#     - export ENV_CMAKE_OPTIONS="${ENV_CMAKE_OPTIONS};-DCMAKE_CXX_COMPILER=${SOURCE_DIR}/bin/nvcc_wrapper"
-#     - export ENV_CMAKE_OPTIONS="${ENV_CMAKE_OPTIONS};-DKokkos_ARCH_AMPERE80=ON"
-#     - export ENV_CMAKE_OPTIONS="${ENV_CMAKE_OPTIONS};-DKokkos_ENABLE_CUDA=ON"
-#     - ctest -VV -D CDASH_MODEL="Nightly" -D CTEST_SITE="nersc" -D CMAKE_OPTIONS="${ENV_CMAKE_OPTIONS}" -S ${SCRIPT_FILE} -D CTEST_BUILD_NAME="NVIDIA-A100-CUDA-nvcc/12.4"
+A100-CUDA-nvcc:
+  stage: test
+  script:
+    - echo "Kokkos-CUDA tests by $GITLAB_USER_LOGIN using nvcc."
+    - module load PrgEnv-gnu gcc/12.2.0
+    - export BUILD_DIR=${SOURCE_DIR}/build_cuda_nvcc
+    - export ENV_CMAKE_OPTIONS="${ENV_KOKKOS_OPTIONS}"
+    - export ENV_CMAKE_OPTIONS="${ENV_CMAKE_OPTIONS};-DCMAKE_CXX_COMPILER=${SOURCE_DIR}/bin/nvcc_wrapper"
+    - export ENV_CMAKE_OPTIONS="${ENV_CMAKE_OPTIONS};-DKokkos_ARCH_AMPERE80=ON"
+    - export ENV_CMAKE_OPTIONS="${ENV_CMAKE_OPTIONS};-DKokkos_ENABLE_CUDA=ON"
+    - ctest -VV -D CDASH_MODEL="Nightly" -D CTEST_SITE="nersc" -D CMAKE_OPTIONS="${ENV_CMAKE_OPTIONS}" -S ${SCRIPT_FILE} -D CTEST_BUILD_NAME="NVIDIA-A100-CUDA-nvcc/12.4"
 #
 # A100-CUDA-clang:
 #   stage: test
