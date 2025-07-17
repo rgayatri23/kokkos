@@ -107,11 +107,9 @@ void OpenMPTargetInternal::impl_initialize() {
   // FIXME_OPENMPTARGET:  Only fix the number of teams for NVIDIA architectures
   // from Pascal and upwards.
   // FIXME_OPENMPTARGTE: Cray compiler did not yet implement omp_set_num_teams.
-#if !defined(KOKKOS_COMPILER_CRAY_LLVM)
 #if defined(KOKKOS_IMPL_ARCH_NVIDIA_GPU) && defined(KOKKOS_COMPILER_CLANG) && \
     (KOKKOS_COMPILER_CLANG >= 1300)
   omp_set_num_teams(512);
-#endif
 #endif
 }
 int OpenMPTargetInternal::impl_is_initialized() {
@@ -168,14 +166,6 @@ void OpenMPTargetInternal::resize_scratch(int64_t team_size,
   // league_size.
   int max_active_teams =
       std::min(OpenMPTargetInternal::concurrency() / team_size, league_size);
-
-  // max_active_teams is the number of active teams on the given hardware.
-  // We set the number of teams to be twice the number of max_active_teams for
-  // the compiler to pick the right number in its case.
-  // FIXME_OPENMPTARGET: Cray compiler did not yet implement omp_set_num_teams.
-#if !defined(KOKKOS_COMPILER_CRAY_LLVM)
-  omp_set_num_teams(max_active_teams * 2);
-#endif
 
   // Total amount of scratch memory allocated is depenedent
   // on the maximum number of in-flight teams possible.

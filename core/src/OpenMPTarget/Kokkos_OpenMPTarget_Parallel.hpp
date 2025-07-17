@@ -35,7 +35,7 @@ namespace Impl {
 
 class OpenMPTargetExecTeamMember {
  public:
-  static constexpr int TEAM_REDUCE_SIZE = 512;
+  static constexpr size_t TEAM_REDUCE_SIZE = 512;
 
   using execution_space      = Kokkos::Experimental::OpenMPTarget;
   using scratch_memory_space = execution_space::scratch_memory_space;
@@ -235,15 +235,14 @@ class OpenMPTargetExecTeamMember {
       const int vector_length  // const TeamPolicyInternal< OpenMPTarget,
                                // Properties ...> & team
       ,
-      void* const glb_scratch, const int shmem_block_index,
-      const size_t shmem_size_L0, const size_t shmem_size_L1)
+      void* const glb_scratch, const size_t shmem_size_L0,
+      const size_t shmem_size_L1)
       : m_team_scratch_size{shmem_size_L0, shmem_size_L1},
         m_team_rank(0),
         m_team_size(team_size),
         m_league_rank(league_rank),
         m_league_size(league_size),
         m_vector_length(vector_length),
-        m_shmem_block_index(shmem_block_index),
         m_glb_scratch(glb_scratch) {
     const int omp_tid = omp_get_thread_num();
 
@@ -257,31 +256,18 @@ class OpenMPTargetExecTeamMember {
     //
     // Size allocated in HBM will now change based on whether we use llvm
     // extensions.
-#if defined(KOKKOS_IMPL_OPENMPTARGET_LLVM_EXTENSIONS)
     const int total_shmem = shmem_size_L1 + shmem_size_L1 * 0.1;
-#else
-    const int total_shmem =
-        shmem_size_L0 + shmem_size_L1 + (shmem_size_L0 + shmem_size_L1) * 0.1;
-#endif
 
     // Per team offset for buffer in HBM.
     const int reduce_offset =
         m_shmem_block_index * (total_shmem + TEAM_REDUCE_SIZE);
 
-#if defined(KOKKOS_IMPL_OPENMPTARGET_LLVM_EXTENSIONS)
     const int l1_offset = reduce_offset + TEAM_REDUCE_SIZE;
     char* l0_scratch =
         static_cast<char*>(llvm_omp_target_dynamic_shared_alloc());
     m_team_shared = scratch_memory_space(
         l0_scratch, shmem_size_L0, static_cast<char*>(glb_scratch) + l1_offset,
         shmem_size_L1);
-#else
-    const int l0_offset = reduce_offset + TEAM_REDUCE_SIZE;
-    const int l1_offset = l0_offset + shmem_size_L0;
-    m_team_shared       = scratch_memory_space(
-        (static_cast<char*>(glb_scratch) + l0_offset), shmem_size_L0,
-        static_cast<char*>(glb_scratch) + l1_offset, shmem_size_L1);
-#endif
     m_reduce_scratch = static_cast<char*>(glb_scratch) + reduce_offset;
     m_league_rank    = league_rank;
     m_team_rank      = omp_tid;

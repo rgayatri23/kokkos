@@ -355,15 +355,8 @@ struct ParallelReduceSpecialize<FunctorType, TeamPolicyInternal<PolicyArgs...>,
 
     ValueType result = ValueType();
 
-    // Maximum active teams possible.
-    // FIXME_OPENMPTARGET: Cray compiler did not yet implement
-    // omp_get_max_teams.
-#if !defined(KOKKOS_COMPILER_CRAY_LLVM)
-    int max_active_teams = omp_get_max_teams();
-#else
     int max_active_teams =
         std::min(p.space().concurrency() / team_size, league_size);
-#endif
 
     // If the league size is <=0, do not launch the kernel.
     if (max_active_teams <= 0) return;
@@ -388,9 +381,9 @@ struct ParallelReduceSpecialize<FunctorType, TeamPolicyInternal<PolicyArgs...>,
       // Guarantee that the compilers respect the `num_teams` clause
       for (int league_id = blockIdx; league_id < league_size;
            league_id += gridDim) {
-        typename PolicyType::member_type team(
-            league_id, league_size, team_size, vector_length, scratch_ptr,
-            blockIdx, shmem_size_L0, shmem_size_L1);
+        typename PolicyType::member_type team(league_id, league_size, team_size,
+                                              vector_length, scratch_ptr,
+                                              shmem_size_L0, shmem_size_L1);
         f(team, result);
       }
     }
@@ -423,14 +416,8 @@ struct ParallelReduceSpecialize<FunctorType, TeamPolicyInternal<PolicyArgs...>,
         p.space().impl_internal_space_instance()->get_scratch_ptr();
 
     // Maximum active teams possible.
-    // FIXME_OPENMPTARGET: Cray compiler did not yet implement
-    // omp_get_max_teams.
-#if !defined(KOKKOS_COMPILER_CRAY_LLVM)
-    int max_active_teams = omp_get_max_teams();
-#else
     int max_active_teams =
         std::min(p.space().concurrency() / team_size, league_size);
-#endif
 
     // If the league size is <=0, do not launch the kernel.
     if (max_active_teams <= 0) return;
@@ -459,7 +446,7 @@ struct ParallelReduceSpecialize<FunctorType, TeamPolicyInternal<PolicyArgs...>,
                league_id += gridDim) {
             typename PolicyType::member_type team(
                 league_id, league_size, team_size, vector_length, scratch_ptr,
-                blockIdx, shmem_size_L0, shmem_size_L1);
+                shmem_size_L0, shmem_size_L1);
             f(team, result);
           }
         }
@@ -481,7 +468,7 @@ struct ParallelReduceSpecialize<FunctorType, TeamPolicyInternal<PolicyArgs...>,
                league_id += gridDim) {
             typename PolicyType::member_type team(
                 league_id, league_size, team_size, vector_length, scratch_ptr,
-                blockIdx, shmem_size_L0, shmem_size_L1);
+                shmem_size_L0, shmem_size_L1);
             f(team, result);
           }
         }
@@ -509,7 +496,7 @@ struct ParallelReduceSpecialize<FunctorType, TeamPolicyInternal<PolicyArgs...>,
              league_id += gridDim) {
           typename PolicyType::member_type team(
               league_id, league_size, team_size, vector_length, scratch_ptr,
-              blockIdx, shmem_size_L0, shmem_size_L1);
+              shmem_size_L0, shmem_size_L1);
           f(team, result);
         }
       }

@@ -23,6 +23,14 @@
 #if defined(KOKKOS_COMPILER_CLANG) && (KOKKOS_COMPILER_CLANG >= 1700) && \
     (defined(KOKKOS_ARCH_AMD_GPU) || defined(KOKKOS_IMPL_ARCH_NVIDIA_GPU))
 #define KOKKOS_IMPL_OPENMPTARGET_LLVM_EXTENSIONS
+
+// Define a macro that can be used to separate Kernel Mode extensions in llvm
+// compiler from OpenMP standard directives. The extensions are only available
+// from llvm compiler version greater than version 20.
+#if (KOKKOS_COMPILER_CLANG >= 2000)
+#define KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE
+#endif
+
 #endif
 
 #define KOKKOS_IMPL_OPENMPTARGET_PRAGMA_HELPER(x) _Pragma(#x)

@@ -18,6 +18,7 @@
 #define KOKKOS_OPENMPTARGET_PARALLEL_FOR_TEAM_HPP
 
 #include <omp.h>
+#include <ompx.h>
 #include <sstream>
 #include <OpenMPTarget/Kokkos_OpenMPTarget_Macros.hpp>
 #include <Kokkos_Parallel.hpp>
@@ -36,8 +37,17 @@ KOKKOS_INLINE_FUNCTION void parallel_for(
     const Impl::TeamThreadRangeBoundariesStruct<
         iType, Impl::OpenMPTargetExecTeamMember>& loop_boundaries,
     const Lambda& lambda) {
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+  const int blockDimy = ompx::block_dim(ompx::dim_y);
+  const int threadIdy = ompx::thread_id(ompx::dim_y);
+
+  for (iType i = loop_boundaries.start + threadIdy; i < loop_boundaries.end;
+       i += blockDimy)
+    lambda(i);
+#else
 #pragma omp for nowait schedule(static, 1)
   for (iType i = loop_boundaries.start; i < loop_boundaries.end; i++) lambda(i);
+#endif
 }
 
 /** \brief  Intra-thread vector parallel_for. Executes lambda(iType i) for each
@@ -50,8 +60,16 @@ KOKKOS_INLINE_FUNCTION void parallel_for(
     const Impl::ThreadVectorRangeBoundariesStruct<
         iType, Impl::OpenMPTargetExecTeamMember>& loop_boundaries,
     const Lambda& lambda) {
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+  const int blockDimx = ompx::block_dim(ompx::dim_x);
+  const int threadIdx = ompx::thread_id(ompx::dim_x);
+  for (iType i = loop_boundaries.start + threadIdx; i < loop_boundaries.end;
+       i += blockDimx)
+    lambda(i);
+#else
 #pragma omp simd
   for (iType i = loop_boundaries.start; i < loop_boundaries.end; i++) lambda(i);
+#endif
 }
 
 /** \brief  Intra-team vector parallel_for. Executes lambda(iType i) for each
@@ -64,8 +82,17 @@ KOKKOS_INLINE_FUNCTION void parallel_for(
     const Impl::TeamVectorRangeBoundariesStruct<
         iType, Impl::OpenMPTargetExecTeamMember>& loop_boundaries,
     const Lambda& lambda) {
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+  const int blockDimx = ompx::block_dim(ompx::dim_x);
+  const int threadIdx = ompx::thread_id(ompx::dim_x);
+
+  for (iType i = loop_boundaries.start + threadIdx; i < loop_boundaries.end;
+       i += blockDimx)
+    lambda(i);
+#else
 #pragma omp for simd nowait schedule(static, 1)
   for (iType i = loop_boundaries.start; i < loop_boundaries.end; i++) lambda(i);
+#endif
 }
 
 namespace Impl {
@@ -103,7 +130,7 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
     const auto team_size     = m_policy.team_size();
     const auto vector_length = m_policy.impl_vector_length();
 
-    const size_t shmem_size_L0 = m_policy.scratch_size(0, team_size);
+    size_t shmem_size_L0 = m_policy.scratch_size(0, team_size);
     const size_t shmem_size_L1 = m_policy.scratch_size(1, team_size);
     m_policy.space().impl_internal_space_instance()->resize_scratch(
         team_size, shmem_size_L0, shmem_size_L1, league_size);
@@ -112,36 +139,32 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
         m_policy.space().impl_internal_space_instance()->get_scratch_ptr();
     auto const a_functor(m_functor);
 
-    // FIXME_OPENMPTARGET - If the team_size is not a multiple of 32, the
-    // scratch implementation does not work in the Release or RelWithDebugInfo
-    // mode but works in the Debug mode.
-
-    // Maximum active teams possible.
-    // FIXME_OPENMPTARGET: Cray compiler did not yet implement
-    // omp_get_max_teams.
-#if !defined(KOKKOS_COMPILER_CRAY_LLVM)
-    int max_active_teams = omp_get_max_teams();
-#else
     int max_active_teams =
         std::min(m_policy.space().concurrency() / team_size, league_size);
-#endif
-
-    // FIXME_OPENMPTARGET: Although the maximum number of teams is set using the
-    // omp_set_num_teams in the resize_scratch routine, the call is not
-    // respected. Hence we need to use `num_teams` routine to restrict the
-    // number of teams generated to max_active_teams. Hopefully we can avoid the
-    // num_teams clause in the future and let compiler pick the right number of
-    // teams. This is not true for Intel architectures.
 
     // If the league size is <=0, do not launch the kernel.
     if (max_active_teams <= 0) return;
 
-    // Performing our own scheduling of teams to avoid separation of code
-    // between teams-distribute and parallel. Gave a 2x performance boost in
-    // test cases with the clang compiler. atomic_compare_exchange can be
-    // avoided since the standard guarantees that the number of teams specified
-    // in the `num_teams` clause is always less than or equal to the maximum
-    // concurrently running teams.
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+    shmem_size_L0 += Impl::OpenMPTargetExecTeamMember::TEAM_REDUCE_SIZE;
+    KOKKOS_IMPL_OMPTARGET_PRAGMA(
+        teams ompx_bare num_teams(max_active_teams, 1, 1) thread_limit(
+            vector_length, team_size, 1) firstprivate(a_functor, scratch_ptr)
+            KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(shmem_size_L0)) {
+      const int blockIdx  = ompx::block_id(ompx::dim_x);
+      const int gridDimx  = ompx::grid_dim(ompx::dim_x);
+      const int blockDimy = ompx::block_dim(ompx::dim_y);
+      const int blockDimx = ompx::block_dim(ompx::dim_x);
+
+      for (int league_id = blockIdx; league_id < league_size;
+           league_id += gridDimx) {
+        typename Policy::member_type team(league_id, league_size, blockDimy,
+                                          blockDimx, scratch_ptr, shmem_size_L0,
+                                          shmem_size_L1);
+        a_functor(team);
+      }
+    }
+#else
     KOKKOS_IMPL_OMPTARGET_PRAGMA(
         teams thread_limit(team_size) firstprivate(a_functor)
             num_teams(max_active_teams) is_device_ptr(scratch_ptr)
@@ -156,7 +179,6 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
 
       // Iterate through the number of teams until league_size and assign the
       // league_id accordingly
-      // Guarantee that the compilers respect the `num_teams` clause
       for (int league_id = blockIdx; league_id < league_size;
            league_id += gridDim) {
         typename Policy::member_type team(league_id, league_size, team_size,
@@ -165,6 +187,7 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
         a_functor(team);
       }
     }
+#endif
   }
 
  public:
