@@ -130,7 +130,7 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
     const auto team_size     = m_policy.team_size();
     const auto vector_length = m_policy.impl_vector_length();
 
-    size_t shmem_size_L0 = m_policy.scratch_size(0, team_size);
+    size_t shmem_size_L0       = m_policy.scratch_size(0, team_size);
     const size_t shmem_size_L1 = m_policy.scratch_size(1, team_size);
     m_policy.space().impl_internal_space_instance()->resize_scratch(
         team_size, shmem_size_L0, shmem_size_L1, league_size);
@@ -182,7 +182,7 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
       for (int league_id = blockIdx; league_id < league_size;
            league_id += gridDim) {
         typename Policy::member_type team(league_id, league_size, team_size,
-                                          vector_length, scratch_ptr, blockIdx,
+                                          vector_length, scratch_ptr,
                                           shmem_size_L0, shmem_size_L1);
         a_functor(team);
       }
