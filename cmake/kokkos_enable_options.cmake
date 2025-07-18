@@ -182,10 +182,6 @@ kokkos_enable_option(
   CUDA_CONSTEXPR ${CUDA_CONSTEXPR_DEFAULT} "Whether to activate experimental relaxed constexpr functions"
 )
 
-if(KOKKOS_ENABLE_OPENMPTARGET AND (KOKKOS_CXX_COMPILER_ID STREQUAL Clang))
-  set(KOKKOS_ENABLE_IMPL_OPENMPTARGET_KERNEL_MODE ON)
-endif()
-
 if(KOKKOS_ENABLE_HPX)
   set(HPX_ASYNC_DISPATCH_DEFAULT ON)
 else()
