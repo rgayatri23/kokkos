@@ -55,7 +55,6 @@ struct index_pair_like<Kokkos::pair<IdxT1, IdxT2>, IndexType> {
 }  // namespace detail
 }  // namespace Kokkos
 
-
 #define MDSPAN_IMPL_CHECK_PRECONDITION 0
 #include <mdspan/mdspan.hpp>
 
