@@ -20,7 +20,7 @@
 // Define a macro that can be used to separate Kernel Mode extensions in llvm
 // compiler from OpenMP standard directives. The extensions are only available
 // from llvm compiler version greater than version 20.
-#if (KOKKOS_COMPILER_CLANG >= 2100)
+#if (KOKKOS_COMPILER_CLANG >= 2000)
 #define KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE
 #endif
 

@@ -428,6 +428,9 @@ struct ParallelReduceSpecialize<FunctorType, TeamPolicyInternal<PolicyArgs...>,
 
       // Case where reduction is on a native data type.
       if constexpr (std::is_arithmetic<ValueType>::value) {
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+        printf("Am here - 2nd one here\n");
+#else
         // Use scratch memory extensions to request dynamic shared memory for
         // the right compiler/architecture combination.
         KOKKOS_IMPL_OMPTARGET_PRAGMA(teams num_teams(max_active_teams) thread_limit(team_size) map(to: f) \
@@ -450,6 +453,7 @@ struct ParallelReduceSpecialize<FunctorType, TeamPolicyInternal<PolicyArgs...>,
             f(team, result);
           }
         }
+#endif
       } else {
         // Case where the reduction is on a non-native data type.
 #pragma omp declare reduction(custom:ValueType : omp_out += omp_in)

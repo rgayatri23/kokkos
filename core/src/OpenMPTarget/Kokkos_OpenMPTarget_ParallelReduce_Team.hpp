@@ -46,6 +46,38 @@ parallel_reduce(const Impl::TeamThreadRangeBoundariesStruct<
   ValueType* TeamThread_scratch =
       static_cast<ValueType*>(loop_boundaries.member.impl_reduce_scratch());
 
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+    ValueType team_reduce = ValueType();
+    size_t scratch_0 = loop_boundaries.team.impl_scratch_level0();
+    double* buf =
+        static_cast<ValueType*>(llvm_omp_target_dynamic_shared_alloc()) +
+        scratch_0;
+
+    const int blockDimx                    = ompx::block_dim(ompx::dim_x);
+    const int threadIdx                    = ompx::thread_id(ompx::dim_x);
+    buf[threadIdx] = ValueType();
+    ompx_sync_block_acq_rel();
+
+    for (iType i = loop_boundaries.start + threadIdx; i < loop_boundaries.end;i += blockDimx) {
+      ValueType tmp = ValueType();
+      lambda(i, tmp);
+      buf[threadIdx] += tmp;
+    }
+    ompx_sync_block_acq_rel();
+
+    // Sum up the update
+    if (threadIdx == 0) {
+      for (int tid = 0; tid < blockDimx; ++tid)
+        team_reduce += buf[tid];
+
+       buf[threadIdx] = team_reduce;
+    }
+    ompx_sync_block_acq_rel();
+
+    // Since we do not know which thread would do the ultimate write. Every thread should have the final value.
+    result = buf[threadIdx];
+#else
+
 #pragma omp barrier
   TeamThread_scratch[0] = ValueType();
 #pragma omp barrier
@@ -69,6 +101,7 @@ parallel_reduce(const Impl::TeamThreadRangeBoundariesStruct<
   }
 
   result = TeamThread_scratch[0];
+#endif
 }
 
 // For some reason the actual version we wanted to write doesn't work
@@ -360,6 +393,7 @@ class ParallelReduce<CombinedFunctorReducerType,
 
  public:
   void execute() const {
+    printf("Am here Huhu\n");
     // Only let one ParallelReduce instance at a time use the scratch memory.
     std::scoped_lock<std::mutex> scratch_memory_lock(
         m_policy.space().impl_internal_space_instance()->m_mutex_scratch_ptr);
