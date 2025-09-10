@@ -49,17 +49,11 @@ append_glob(KOKKOS_CORE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/impl/*.hpp)
 
 if(KOKKOS_ENABLE_CUDA)
   append_glob(KOKKOS_CORE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/Cuda/*.cpp)
-  if(NOT Kokkos_ENABLE_DEPRECATED_CODE_4)
-    list(REMOVE_ITEM KOKKOS_CORE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/Cuda/Kokkos_Cuda_Task.cpp)
-  endif()
   append_glob(KOKKOS_CORE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/Cuda/*.hpp)
 endif()
 
 if(KOKKOS_ENABLE_OPENMP)
   append_glob(KOKKOS_CORE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/OpenMP/*.cpp)
-  if(NOT Kokkos_ENABLE_DEPRECATED_CODE_4)
-    list(REMOVE_ITEM KOKKOS_CORE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/OpenMP/Kokkos_OpenMP_Task.cpp)
-  endif()
   append_glob(KOKKOS_CORE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/OpenMP/*.hpp)
 endif()
 
@@ -85,17 +79,11 @@ endif()
 
 if(KOKKOS_ENABLE_HPX)
   append_glob(KOKKOS_CORE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/HPX/*.cpp)
-  if(NOT Kokkos_ENABLE_DEPRECATED_CODE_4)
-    list(REMOVE_ITEM KOKKOS_CORE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/HPX/Kokkos_HPX_Task.cpp)
-  endif()
   append_glob(KOKKOS_CORE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/HPX/*.hpp)
 endif()
 
 if(KOKKOS_ENABLE_SERIAL)
   append_glob(KOKKOS_CORE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/Serial/*.cpp)
-  if(NOT Kokkos_ENABLE_DEPRECATED_CODE_4)
-    list(REMOVE_ITEM KOKKOS_CORE_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/Serial/Kokkos_Serial_Task.cpp)
-  endif()
   append_glob(KOKKOS_CORE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/Serial/*.hpp)
 endif()
 
@@ -127,8 +115,11 @@ if(NOT desul_FOUND)
     PATTERN "*.hpp"
   )
 
-  message(STATUS "Using internal desul_atomics copy")
+  file(STRINGS "${KOKKOS_SOURCE_DIR}/scripts/desul-hash.txt" KOKKOS_DESUL_HASH)
+  global_set(KOKKOS_DESUL_VERSION "${KOKKOS_DESUL_HASH}")
+  message(STATUS "Using bundled desul_atomics copy (desul/desul@${KOKKOS_DESUL_HASH})")
 else()
+  global_set(KOKKOS_DESUL_VERSION "unknown")
   message(STATUS "Using external desul_atomics install found at:")
   message(STATUS "  " ${desul_DIR})
 endif()
@@ -149,6 +140,7 @@ if(Kokkos_ENABLE_IMPL_MDSPAN)
   message(STATUS "Experimental mdspan support is enabled")
 
   if(Kokkos_ENABLE_MDSPAN_EXTERNAL)
+    global_set(KOKKOS_MDSPAN_VERSION "unknown")
     message(STATUS "Using external mdspan")
     target_link_libraries(kokkoscore PUBLIC std::mdspan)
   else()
@@ -164,8 +156,15 @@ if(Kokkos_ENABLE_IMPL_MDSPAN)
       PATTERN "mdspan"
       PATTERN "*.hpp"
     )
-    message(STATUS "Using internal mdspan directory ${KOKKOS_SOURCE_DIR}/tpls/mdspan/include")
+
+    file(STRINGS "${KOKKOS_SOURCE_DIR}/scripts/mdspan-hash.txt" KOKKOS_MDSPAN_HASH)
+    global_set(KOKKOS_MDSPAN_VERSION "${KOKKOS_MDSPAN_HASH}")
+    message(STATUS "Using bundled mdspan copy (kokkos/mdspan@${KOKKOS_MDSPAN_HASH})")
   endif()
+endif()
+
+if(Kokkos_ENABLE_IMPL_VIEW_LEGACY)
+  global_set(KOKKOS_MDSPAN_VERSION "not applicable")
 endif()
 
 kokkos_link_tpl(kokkoscore PUBLIC HWLOC)

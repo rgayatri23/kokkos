@@ -222,7 +222,11 @@ class CudaInternal {
       cudaGraph_t graph, const cudaGraphNode_t* from, const cudaGraphNode_t* to,
       size_t numDependencies) const {
     set_cuda_device();
+#if CUDART_VERSION >= 13000
+    return cudaGraphAddDependencies(graph, from, to, NULL, numDependencies);
+#else
     return cudaGraphAddDependencies(graph, from, to, numDependencies);
+#endif
   }
 
   cudaError_t cuda_graph_add_empty_node_wrapper(
@@ -276,7 +280,12 @@ class CudaInternal {
   cudaError_t cuda_mem_prefetch_async_wrapper(const void* devPtr, size_t count,
                                               int dstDevice) const {
     set_cuda_device();
+#if CUDART_VERSION >= 13000
+    cudaMemLocation loc = {cudaMemLocationTypeDevice, dstDevice};
+    return cudaMemPrefetchAsync(devPtr, count, loc, 0, m_stream);
+#else
     return cudaMemPrefetchAsync(devPtr, count, dstDevice, m_stream);
+#endif
   }
 
   cudaError_t cuda_memcpy_wrapper(void* dst, const void* src, size_t count,
@@ -340,15 +349,7 @@ class CudaInternal {
   cudaError_t cuda_graph_instantiate_wrapper(cudaGraphExec_t* pGraphExec,
                                              cudaGraph_t graph) const {
     set_cuda_device();
-#if CUDA_VERSION < 12000
-    constexpr size_t error_log_size = 256;
-    cudaGraphNode_t error_node      = nullptr;
-    char error_log[error_log_size];
-    return cudaGraphInstantiate(pGraphExec, graph, &error_node, error_log,
-                                error_log_size);
-#else
     return cudaGraphInstantiate(pGraphExec, graph);
-#endif
   }
 
   // Resizing of reduction related scratch spaces
