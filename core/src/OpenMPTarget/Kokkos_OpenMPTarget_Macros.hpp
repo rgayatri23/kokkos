@@ -17,12 +17,11 @@
 #ifndef KOKKOS_OPENMPTARGET_MACROS_HPP
 #define KOKKOS_OPENMPTARGET_MACROS_HPP
 
-// Define a macro for llvm compiler greater than version 17 and on NVIDIA and
-// AMD GPUs. This would be useful in cases where non-OpenMP standard llvm
-// extensions can be used.
-#if defined(KOKKOS_COMPILER_CLANG) && (KOKKOS_COMPILER_CLANG >= 1700) && \
-    (defined(KOKKOS_ARCH_AMD_GPU) || defined(KOKKOS_IMPL_ARCH_NVIDIA_GPU))
-#define KOKKOS_IMPL_OPENMPTARGET_LLVM_EXTENSIONS
+// Define a macro that can be used to separate Kernel Mode extensions in llvm
+// compiler from OpenMP standard directives. The extensions are only available
+// from llvm compiler version greater than version 20.
+#if (KOKKOS_COMPILER_CLANG >= 2000)
+#define KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE
 #endif
 
 #define KOKKOS_IMPL_OPENMPTARGET_PRAGMA_HELPER(x) _Pragma(#x)
@@ -31,10 +30,6 @@
 
 // Use scratch memory extensions to request dynamic shared memory for the
 // right compiler/architecture combination.
-#ifdef KOKKOS_IMPL_OPENMPTARGET_LLVM_EXTENSIONS
 #define KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(N) ompx_dyn_cgroup_mem(N)
-#else
-#define KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(N)
-#endif
 
 #endif  // KOKKOS_OPENMPTARGET_MACROS_HPP
