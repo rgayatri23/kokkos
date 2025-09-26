@@ -22,6 +22,18 @@
 // from llvm compiler version greater than version 20.
 #if (KOKKOS_COMPILER_CLANG >= 2000)
 #define KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE
+#define ompx_shfl
+
+extern "C" inline int __kmpc_get_warp_size(void);
+
+#pragma omp begin declare variant match(device = {kind(host)})
+extern "C" inline int __kmpc_get_warp_size() { return 0; }
+#pragma omp end declare variant
+
+extern "C" inline uint64_t __kmpc_warp_active_thread_mask(void);
+#pragma omp begin declare variant match(device = {kind(host)})
+extern "C" inline uint64_t __kmpc_warp_active_thread_mask() { return 0; }
+#pragma omp end declare variant
 #endif
 
 #define KOKKOS_IMPL_OPENMPTARGET_PRAGMA_HELPER(x) _Pragma(#x)

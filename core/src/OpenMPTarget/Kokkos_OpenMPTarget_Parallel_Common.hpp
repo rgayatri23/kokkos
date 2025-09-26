@@ -23,6 +23,9 @@
 #include <OpenMPTarget/Kokkos_OpenMPTarget_Reducer.hpp>
 #include <OpenMPTarget/Kokkos_OpenMPTarget_Macros.hpp>
 #include <OpenMPTarget/Kokkos_OpenMPTarget_FunctorAdapter.hpp>
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+#include <ompx.h>
+#endif
 
 namespace Kokkos {
 namespace Impl {
@@ -147,9 +150,82 @@ struct ParallelReduceSpecialize<FunctorType, Kokkos::RangePolicy<PolicyArgs...>,
 
       // Case where reduction is on a native data type.
       if constexpr (std::is_arithmetic<ValueType>::value) {
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+        int team_size       = 64;
+        int num_elems       = end - begin;
+        const int nTeams    = num_elems / team_size + !!(num_elems % team_size);
+        size_t scratch_size = team_size * sizeof(ValueType);
+        constexpr int redn_threads            = 64;
+        ValueType host_redn_arr[redn_threads] = {ValueType()};
+
+        KOKKOS_IMPL_OMPTARGET_PRAGMA(
+            teams ompx_bare num_teams(nTeams, 1, 1) thread_limit(
+                team_size, 1, 1) KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(scratch_size)
+                map(tofrom
+                    : host_redn_arr
+                    [:redn_threads]))  // firstprivate(partial_results))
+        {
+          const int blockidx  = ompx::block_id(ompx::dim_x);
+          const int blockdimx = ompx::block_dim(ompx::dim_x);
+          const int threadidx = ompx::thread_id(ompx::dim_x);
+          int64_t* buf =
+              static_cast<int64_t*>(llvm_omp_target_dynamic_shared_alloc());
+          buf[threadidx] = ValueType();
+          ompx_sync_block_acq_rel();
+
+          const int i = blockidx * blockdimx + threadidx;
+
+          if (i < end) f(i, buf[threadidx]);
+          ompx_sync_block_acq_rel();
+
+#if defined(ompx_shfl)
+          const int warp_size     = __kmpc_get_warp_size();
+          ValueType thread_update = buf[threadidx];
+
+          uint64_t mask = ompx::ballot_sync(__kmpc_warp_active_thread_mask(),
+                                            threadidx < end);
+          for (int offset = warp_size / 2; offset > 0; offset /= 2)
+            thread_update += ompx::shfl_down_sync(mask, thread_update, offset);
+          ompx_sync_block_acq_rel();
+
+          if (threadidx % warp_size == 0)
+            buf[threadidx / warp_size] = thread_update;
+
+          bool active_threads =
+              (threadidx < (blockdimx + warp_size - 1) / warp_size);
+          ompx_sync_block_acq_rel();
+          if (active_threads)
+            thread_update = buf[threadidx];
+          else
+            thread_update = 0;
+
+          mask = ompx::ballot_sync(__kmpc_warp_active_thread_mask(),
+                                   active_threads);
+          for (int offset = warp_size / 2; offset > 0; offset /= 2)
+            thread_update += ompx::shfl_down_sync(mask, thread_update, offset);
+
+          ompx_sync_block_acq_rel();
+
+          if (threadidx == 0) {
+#pragma omp atomic relaxed
+            host_redn_arr[blockidx % redn_threads] += thread_update;
+          }
+#else
+          if (threadidx == 0) {
+            host_redn_arr[blockidx % redn_threads] = 0;
+
+            for (int tid = 0; tid < blockdimx; ++tid)
+              partial_results[blockidx % redn_threads] += buf[tid];
+          }
+#endif
+        }
+        for (int i = 0; i < redn_threads; ++i) result += host_redn_arr[i];
+#else
 #pragma omp target teams distribute parallel for map(to : f) \
     reduction(+ : result)
         for (auto i = begin; i < end; ++i) f(i, result);
+#endif
+
       } else {
 #pragma omp declare reduction(custom:ValueType : omp_out += omp_in)
 #pragma omp target teams distribute parallel for map(to : f) \
