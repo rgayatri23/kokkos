@@ -171,7 +171,6 @@ struct ParallelReduceSpecialize<FunctorType, Kokkos::RangePolicy<PolicyArgs...>,
           ValueType* buf =
               static_cast<ValueType*>(llvm_omp_target_dynamic_shared_alloc());
           buf[threadidx] = ValueType();
-          ompx_sync_block_acq_rel();
 
           const int i = blockidx * blockdimx + threadidx;
 
@@ -219,7 +218,7 @@ struct ParallelReduceSpecialize<FunctorType, Kokkos::RangePolicy<PolicyArgs...>,
           }
 #endif
         }
-        for (int i = 0; i < redn_threads; ++i) result += host_redn_arr[i];
+        for (int i = 0; i < std::min(redn_threads,nTeams); ++i) result += host_redn_arr[i];
 #else
 #pragma omp target teams distribute parallel for map(to : f) \
     reduction(+ : result)

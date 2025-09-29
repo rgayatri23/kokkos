@@ -151,15 +151,15 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
         teams ompx_bare num_teams(max_active_teams, 1, 1) thread_limit(
             vector_length, team_size, 1) firstprivate(a_functor, scratch_ptr)
             KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(shmem_size_L0)) {
-      const int blockIdx  = ompx::block_id(ompx::dim_x);
-      const int gridDimx  = ompx::grid_dim(ompx::dim_x);
-      const int blockDimy = ompx::block_dim(ompx::dim_y);
-      const int blockDimx = ompx::block_dim(ompx::dim_x);
+      const auto blockIdx  = ompx::block_id(ompx::dim_x);
+      const auto gridDimx  = ompx::grid_dim(ompx::dim_x);
+      const auto blockDimy = ompx::block_dim(ompx::dim_y);
+      const auto blockDimx = ompx::block_dim(ompx::dim_x);
 
       for (int league_id = blockIdx; league_id < league_size;
            league_id += gridDimx) {
         typename Policy::member_type team(league_id, league_size, blockDimy,
-                                          blockDimx, scratch_ptr, shmem_size_L0,
+                                          blockDimx, scratch_ptr, blockIdx, shmem_size_L0,
                                           shmem_size_L1);
         a_functor(team);
       }
