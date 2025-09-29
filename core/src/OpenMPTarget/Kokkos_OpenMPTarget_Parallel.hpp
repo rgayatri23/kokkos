@@ -235,7 +235,7 @@ class OpenMPTargetExecTeamMember {
       const int vector_length  // const TeamPolicyInternal< OpenMPTarget,
                                // Properties ...> & team
       ,
-      void* const glb_scratch,
+      void* const glb_scratch, const int shmem_block_index,
       const size_t shmem_size_L0, const size_t shmem_size_L1)
       : m_team_scratch_size{shmem_size_L0, shmem_size_L1},
         m_team_rank(0),
@@ -243,6 +243,7 @@ class OpenMPTargetExecTeamMember {
         m_league_rank(league_rank),
         m_league_size(league_size),
         m_vector_length(vector_length),
+        m_shmem_block_index(shmem_block_index),
         m_glb_scratch(glb_scratch) {
     const int omp_tid = omp_get_thread_num();
 

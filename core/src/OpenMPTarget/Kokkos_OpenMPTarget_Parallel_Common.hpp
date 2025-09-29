@@ -165,11 +165,11 @@ struct ParallelReduceSpecialize<FunctorType, Kokkos::RangePolicy<PolicyArgs...>,
                     : host_redn_arr
                     [:redn_threads]))  // firstprivate(partial_results))
         {
-          const int blockidx  = ompx::block_id(ompx::dim_x);
-          const int blockdimx = ompx::block_dim(ompx::dim_x);
-          const int threadidx = ompx::thread_id(ompx::dim_x);
-          int64_t* buf =
-              static_cast<int64_t*>(llvm_omp_target_dynamic_shared_alloc());
+          const auto blockidx  = ompx::block_id(ompx::dim_x);
+          const auto blockdimx = ompx::block_dim(ompx::dim_x);
+          const auto threadidx = ompx::thread_id(ompx::dim_x);
+          ValueType* buf =
+              static_cast<ValueType*>(llvm_omp_target_dynamic_shared_alloc());
           buf[threadidx] = ValueType();
           ompx_sync_block_acq_rel();
 
