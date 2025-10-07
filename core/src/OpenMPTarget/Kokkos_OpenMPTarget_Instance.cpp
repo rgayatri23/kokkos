@@ -144,6 +144,20 @@ void OpenMPTargetInternal::clear_scratch() {
 
 void* OpenMPTargetInternal::get_scratch_ptr() { return m_scratch_ptr; }
 
+void OpenMPTargetInternal::set_max_teams(int64_t team_size,
+                                         int64_t league_size) {
+  // Maximum active teams possible.
+  // The number should not exceed the maximum in-flight teams possible or the
+  // league_size.
+  int max_active_teams =
+      std::min(OpenMPTargetInternal::concurrency() / team_size, league_size);
+
+  // max_active_teams is the number of active teams on the given hardware.
+  // We set the number of teams to be twice the number of max_active_teams for
+  // the compiler to pick the right number in its case.
+  omp_set_num_teams(max_active_teams * 2);
+}
+
 void OpenMPTargetInternal::resize_scratch(int64_t team_size,
                                           int64_t shmem_size_L0,
                                           int64_t shmem_size_L1,

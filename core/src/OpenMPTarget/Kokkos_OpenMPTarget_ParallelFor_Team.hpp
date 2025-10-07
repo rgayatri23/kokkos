@@ -104,7 +104,6 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
   using Policy =
       Kokkos::Impl::TeamPolicyInternal<Kokkos::Experimental::OpenMPTarget,
                                        Properties...>;
-  using Member = typename Policy::member_type;
 
   Kokkos::Experimental::Impl::FunctorAdapter<FunctorType, Policy> m_functor;
 
@@ -159,8 +158,8 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
       for (int league_id = blockIdx; league_id < league_size;
            league_id += gridDimx) {
         typename Policy::member_type team(league_id, league_size, blockDimy,
-                                          blockDimx, scratch_ptr, blockIdx, shmem_size_L0,
-                                          shmem_size_L1);
+                                          blockDimx, scratch_ptr, blockIdx,
+                                          shmem_size_L0, shmem_size_L1);
         a_functor(team);
       }
     }

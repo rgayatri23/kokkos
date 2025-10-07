@@ -61,6 +61,8 @@ class OpenMPTargetInternal {
   void resize_scratch(int64_t team_reduce_bytes, int64_t team_shared_bytes,
                       int64_t thread_local_bytes, int64_t league_size);
 
+  void set_max_teams(int64_t, int64_t);
+
   void* m_scratch_ptr = nullptr;
   std::mutex m_mutex_scratch_ptr;
   int64_t m_scratch_size      = 0;

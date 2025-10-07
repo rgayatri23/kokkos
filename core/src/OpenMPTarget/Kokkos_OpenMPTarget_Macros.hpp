@@ -22,7 +22,7 @@
 // from llvm compiler version greater than version 20.
 #if (KOKKOS_COMPILER_CLANG >= 2000)
 #define KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE
-#define ompx_shfl
+/*#define ompx_shfl*/
 
 extern "C" inline int __kmpc_get_warp_size(void);
 

@@ -19,6 +19,7 @@
 
 #include <omp.h>
 #include <sstream>
+#include <iostream>
 #include <Kokkos_Parallel.hpp>
 #include <OpenMPTarget/Kokkos_OpenMPTarget_Reducer.hpp>
 #include <OpenMPTarget/Kokkos_OpenMPTarget_Macros.hpp>
@@ -133,8 +134,20 @@ struct ParallelReduceSpecialize<FunctorType, Kokkos::RangePolicy<PolicyArgs...>,
     Experimental::Impl::OpenMPTargetInternal::verify_initialized(
         "Kokkos::Experimental::OpenMPTarget RangePolicy "
         "parallel_reduce:array_reduction");
-    const auto begin = p.begin();
-    const auto end   = p.end();
+    using IndexType       = typename PolicyType::index_type;
+    const IndexType begin = p.begin();
+    const IndexType end   = p.end();
+
+    Kokkos::Experimental::Impl::FunctorAdapter<FunctorType, PolicyType>
+        m_functor(f);
+    auto const a_functor(m_functor);
+
+    /*using FunctorAnalysis =*/
+    /*    Impl::FunctorAnalysis<Impl::FunctorPatternInterface::REDUCE,
+     * PolicyType,*/
+    /*                          FunctorType, ValueType>;*/
+    /**/
+    /*typename FunctorAnalysis::Reducer final_reducer(f.get_functor());*/
 
     // Enter the loop if the reduction is on a scalar type.
     if constexpr (NumReductions == 1) {
@@ -151,74 +164,123 @@ struct ParallelReduceSpecialize<FunctorType, Kokkos::RangePolicy<PolicyArgs...>,
       // Case where reduction is on a native data type.
       if constexpr (std::is_arithmetic<ValueType>::value) {
 #if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
-        int team_size       = 64;
-        int num_elems       = end - begin;
-        const int nTeams    = num_elems / team_size + !!(num_elems % team_size);
-        size_t scratch_size = team_size * sizeof(ValueType);
-        constexpr int redn_threads            = 64;
+        int team_size             = 32;
+        const IndexType num_elems = end - begin;
+        const IndexType nTeams =
+            num_elems / team_size + !!(num_elems % team_size);
+        const IndexType redn_threads          = 64;
         ValueType host_redn_arr[redn_threads] = {ValueType()};
+        size_t scratch_size                   = 0;
+
+        p.space().impl_internal_space_instance()->set_max_teams(team_size,
+                                                                nTeams);
+
+        // If shuffle instructions are involved, scratch space is only needed to
+        // store warp-level partial updates. Per warp update happens in a local
+        // variable which is hopefully stored in a register. The assumption here
+        // is that the maximum number of threads generated would never exceed
+        // warp_size^2.
+        // FIXME_OPENMPTARGET - At a later stage the warp_size of an
+        // architecture should be evaluated some other place and stored in a
+        // static variable since this will not change.
+#if defined(ompx_shfl)
+        const int arch_warp_size = 32;
+        scratch_size             = arch_warp_size * sizeof(ValueType);
+#else
+        scratch_size = team_size * sizeof(ValueType);
+#endif
 
         KOKKOS_IMPL_OMPTARGET_PRAGMA(
-            teams ompx_bare num_teams(nTeams, 1, 1) thread_limit(
+            teams ompx_bare num_teams(omp_get_max_teams(), 1, 1) thread_limit(
                 team_size, 1, 1) KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(scratch_size)
                 map(tofrom
                     : host_redn_arr
                     [:redn_threads]))  // firstprivate(partial_results))
         {
-          const auto blockidx  = ompx::block_id(ompx::dim_x);
-          const auto blockdimx = ompx::block_dim(ompx::dim_x);
-          const auto threadidx = ompx::thread_id(ompx::dim_x);
+          const IndexType blockidx  = ompx::block_id(ompx::dim_x);
+          const IndexType blockdimx = ompx::block_dim(ompx::dim_x);
+          const IndexType threadidx = ompx::thread_id(ompx::dim_x);
+          const IndexType gridDimx  = ompx::grid_dim(ompx::dim_x);
+          const int warp_size       = __kmpc_get_warp_size();
           ValueType* buf =
               static_cast<ValueType*>(llvm_omp_target_dynamic_shared_alloc());
-          buf[threadidx] = ValueType();
 
-          const int i = blockidx * blockdimx + threadidx;
-
-          if (i < end) f(i, buf[threadidx]);
-          ompx_sync_block_acq_rel();
+          for (IndexType bid = blockidx; bid < nTeams; bid += gridDimx) {
+            buf[threadidx]    = ValueType();
+            const IndexType i = bid * blockdimx + threadidx + begin;
 
 #if defined(ompx_shfl)
-          const int warp_size     = __kmpc_get_warp_size();
-          ValueType thread_update = buf[threadidx];
+            ValueType thread_update = ValueType();
+            if (i < end) a_functor(i, thread_update);
+            ompx_sync_block_acq_rel();
 
-          uint64_t mask = ompx::ballot_sync(__kmpc_warp_active_thread_mask(),
-                                            threadidx < end);
-          for (int offset = warp_size / 2; offset > 0; offset /= 2)
-            thread_update += ompx::shfl_down_sync(mask, thread_update, offset);
-          ompx_sync_block_acq_rel();
+            uint64_t mask = ompx::ballot_sync(__kmpc_warp_active_thread_mask(),
+                                              threadidx < end);
+            for (int offset = warp_size / 2; offset > 0; offset /= 2)
+              thread_update +=
+                  ompx::shfl_down_sync(mask, thread_update, offset);
+            ompx_sync_block_acq_rel();
 
-          if (threadidx % warp_size == 0)
-            buf[threadidx / warp_size] = thread_update;
+            if (threadidx % warp_size == 0)
+              buf[threadidx / warp_size] = thread_update;
 
-          bool active_threads =
-              (threadidx < (blockdimx + warp_size - 1) / warp_size);
-          ompx_sync_block_acq_rel();
-          if (active_threads)
-            thread_update = buf[threadidx];
-          else
-            thread_update = 0;
+            bool active_threads =
+                (threadidx < (blockdimx + warp_size - 1) / warp_size);
+            ompx_sync_block_acq_rel();
+            if (active_threads)
+              thread_update = buf[threadidx];
+            else
+              thread_update = 0;
 
-          mask = ompx::ballot_sync(__kmpc_warp_active_thread_mask(),
-                                   active_threads);
-          for (int offset = warp_size / 2; offset > 0; offset /= 2)
-            thread_update += ompx::shfl_down_sync(mask, thread_update, offset);
+            mask = ompx::ballot_sync(__kmpc_warp_active_thread_mask(),
+                                     active_threads);
+            for (int offset = warp_size / 2; offset > 0; offset /= 2)
+              thread_update +=
+                  ompx::shfl_down_sync(mask, thread_update, offset);
 
-          ompx_sync_block_acq_rel();
+            ompx_sync_block_acq_rel();
 
-          if (threadidx == 0) {
+            if (threadidx == 0) {
 #pragma omp atomic relaxed
-            host_redn_arr[blockidx % redn_threads] += thread_update;
-          }
+              host_redn_arr[bid % redn_threads] += thread_update;
+            }
 #else
-          if (threadidx == 0) {
-            host_redn_arr[blockidx % redn_threads] = 0;
+            // Store thread-specific update in scratch.
+            if (i < end) a_functor(i, buf[threadidx]);
+            ompx_sync_block_acq_rel();
 
-            for (int tid = 0; tid < blockdimx; ++tid)
-              partial_results[blockidx % redn_threads] += buf[tid];
-          }
+            // Each warp stores its partial update in its first thread.
+            ValueType warp_update = ValueType();
+            if (threadidx % warp_size == 0) {
+              for (int tid = threadidx; tid < threadidx + warp_size; ++tid)
+                warp_update += buf[tid];
+            }
+            ompx_sync_block_acq_rel();
+            buf[threadidx] = ValueType();
+
+            // Store each warp specific partial update in consecutive scratch
+            // locations.
+            if (threadidx % warp_size == 0)
+              buf[threadidx / warp_size] = warp_update;
+            ompx_sync_block_acq_rel();
+
+            // The first thread accumulates all partial warp specific updates.
+            // The assumption is that team_size <= warp_size^2.
+            // Hence the update loop only happens over warp_size.
+            if (threadidx == 0) {
+              ValueType block_update = ValueType();
+              for (int tid = 0; tid < warp_size; ++tid)
+                block_update += buf[tid];
+
+#pragma omp atomic relaxed
+              host_redn_arr[bid % redn_threads] += block_update;
+            }
+
 #endif
+          }
         }
-        for (int i = 0; i < std::min(redn_threads,nTeams); ++i) result += host_redn_arr[i];
+        for (IndexType i = 0; i < std::min(redn_threads, nTeams); ++i)
+          result += host_redn_arr[i];
 #else
 #pragma omp target teams distribute parallel for map(to : f) \
     reduction(+ : result)
