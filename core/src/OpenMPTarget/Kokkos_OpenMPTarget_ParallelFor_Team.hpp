@@ -38,8 +38,11 @@ KOKKOS_INLINE_FUNCTION void parallel_for(
         iType, Impl::OpenMPTargetExecTeamMember>& loop_boundaries,
     const Lambda& lambda) {
 #if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
-  const int blockDimy = ompx::block_dim(ompx::dim_y);
-  const int threadIdy = ompx::thread_id(ompx::dim_y);
+  const iType blockDimy = ompx::block_dim(ompx::dim_y);
+  const iType threadIdy = ompx::thread_id(ompx::dim_y);
+
+  /*printf("start = %d, end = %d \n",loop_boundaries.start,
+   * loop_boundaries.end);*/
 
   for (iType i = loop_boundaries.start + threadIdy; i < loop_boundaries.end;
        i += blockDimy)
@@ -61,8 +64,9 @@ KOKKOS_INLINE_FUNCTION void parallel_for(
         iType, Impl::OpenMPTargetExecTeamMember>& loop_boundaries,
     const Lambda& lambda) {
 #if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
-  const int blockDimx = ompx::block_dim(ompx::dim_x);
-  const int threadIdx = ompx::thread_id(ompx::dim_x);
+  const iType blockDimx = ompx::block_dim(ompx::dim_x);
+  const iType threadIdx = ompx::thread_id(ompx::dim_x);
+
   for (iType i = loop_boundaries.start + threadIdx; i < loop_boundaries.end;
        i += blockDimx)
     lambda(i);
@@ -83,8 +87,8 @@ KOKKOS_INLINE_FUNCTION void parallel_for(
         iType, Impl::OpenMPTargetExecTeamMember>& loop_boundaries,
     const Lambda& lambda) {
 #if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
-  const int blockDimx = ompx::block_dim(ompx::dim_x);
-  const int threadIdx = ompx::thread_id(ompx::dim_x);
+  const iType blockDimx = ompx::block_dim(ompx::dim_x);
+  const iType threadIdx = ompx::thread_id(ompx::dim_x);
 
   for (iType i = loop_boundaries.start + threadIdx; i < loop_boundaries.end;
        i += blockDimx)
@@ -139,7 +143,7 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
     auto const a_functor(m_functor);
 
     // Maximum active teams possible.
-    int max_active_teams = omp_get_max_teams();
+    int max_active_teams = std::min(omp_get_max_teams(), league_size);
 
     // If the league size is <=0, do not launch the kernel.
     if (max_active_teams <= 0) return;
@@ -181,7 +185,7 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
       for (int league_id = blockIdx; league_id < league_size;
            league_id += gridDim) {
         typename Policy::member_type team(league_id, league_size, team_size,
-                                          vector_length, scratch_ptr,
+                                          vector_length, scratch_ptr, blockIdx,
                                           shmem_size_L0, shmem_size_L1);
         a_functor(team);
       }

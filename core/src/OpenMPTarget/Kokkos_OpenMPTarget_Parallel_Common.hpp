@@ -543,6 +543,7 @@ struct ParallelReduceSpecialize<FunctorType, TeamPolicyInternal<PolicyArgs...>,
     const int league_size   = p.league_size();
     const int team_size     = p.team_size();
     const int vector_length = p.impl_vector_length();
+    using IndexType         = typename PolicyType::index_type;
 
     const size_t shmem_size_L0 = p.scratch_size(0, team_size);
     const size_t shmem_size_L1 = p.scratch_size(1, team_size);
@@ -566,6 +567,58 @@ struct ParallelReduceSpecialize<FunctorType, TeamPolicyInternal<PolicyArgs...>,
       if constexpr (std::is_arithmetic<ValueType>::value) {
         // Use scratch memory extensions to request dynamic shared memory for
         // the right compiler/architecture combination.
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+        const int arch_warp_size =
+            p.space().impl_internal_space_instance()->get_warp_size();
+        const IndexType nTeams = static_cast<IndexType>(std::min(
+            max_active_teams,
+            league_size / arch_warp_size + !!(league_size % arch_warp_size)));
+
+        size_t scratch_size =
+            arch_warp_size * arch_warp_size * sizeof(ValueType) + shmem_size_L0;
+
+        p.space().impl_internal_space_instance()->set_max_teams(
+            arch_warp_size * arch_warp_size, nTeams);
+        const IndexType redn_threads          = 64;
+        ValueType host_redn_arr[redn_threads] = {ValueType()};
+
+        printf("Max teams = %d\n", omp_get_max_teams());
+
+        KOKKOS_IMPL_OMPTARGET_PRAGMA(
+            teams ompx_bare num_teams(omp_get_max_teams(), 1, 1)
+                thread_limit(arch_warp_size, arch_warp_size, 1)
+                    KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(scratch_size)
+                        map(tofrom
+                            : host_redn_arr
+                            [:redn_threads]))  // firstprivate(partial_results))
+        {
+          const IndexType blockIdx = ompx::block_id(ompx::dim_x);
+          const IndexType gridDimx = ompx::grid_dim(ompx::dim_x);
+
+          const IndexType blockDimx = ompx::block_dim(ompx::dim_x);
+          const IndexType blockDimy = ompx::block_dim(ompx::dim_y);
+
+          const IndexType threadIdx = ompx::thread_id(ompx::dim_x);
+          const IndexType threadIdy = ompx::thread_id(ompx::dim_y);
+          ValueType* buf =
+              static_cast<ValueType*>(llvm_omp_target_dynamic_shared_alloc());
+          buf[threadIdx * (blockDimx + blockDimy)] = ValueType();
+
+          for (IndexType league_id = blockIdx; league_id < league_size;
+               league_id += gridDimx) {
+            typename PolicyType::member_type team(
+                league_id, league_size, team_size, vector_length, scratch_ptr,
+                blockIdx, shmem_size_L0, shmem_size_L1);
+            f(team, buf[threadIdx * (blockDimx + blockDimy)]);
+          }
+          ompx_sync_block_acq_rel();
+          if (threadIdx == 0 && threadIdy == 0)
+#pragma omp atomic relaxed
+            host_redn_arr[blockIdx % redn_threads] +=
+                buf[threadIdx * (blockDimx + blockDimy)];
+        }
+
+#else
         KOKKOS_IMPL_OMPTARGET_PRAGMA(teams num_teams(max_active_teams) thread_limit(team_size) map(to: f) \
     is_device_ptr(scratch_ptr) reduction(+: result)               \
         KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(shmem_size_L0))
@@ -586,6 +639,7 @@ struct ParallelReduceSpecialize<FunctorType, TeamPolicyInternal<PolicyArgs...>,
             f(team, result);
           }
         }
+#endif
       } else {
         // Case where the reduction is on a non-native data type.
 #pragma omp declare reduction(custom:ValueType : omp_out += omp_in)

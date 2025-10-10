@@ -18,6 +18,7 @@
 #define KOKKOS_OPENMPTARGET_PARALLELREDUCE_TEAM_HPP
 
 #include <omp.h>
+#include <ompx.h>
 #include <sstream>
 #include <Kokkos_Parallel.hpp>
 #include <OpenMPTarget/Kokkos_OpenMPTarget_Parallel.hpp>
@@ -37,9 +38,38 @@ KOKKOS_INLINE_FUNCTION std::enable_if_t<!Kokkos::is_reducer<ValueType>::value>
 parallel_reduce(const Impl::TeamThreadRangeBoundariesStruct<
                     iType, Impl::OpenMPTargetExecTeamMember>& loop_boundaries,
                 const Lambda& lambda, ValueType& result) {
-  // FIXME_OPENMPTARGET - Make sure that if its an array reduction, number of
-  // elements in the array <= 32. For reduction we allocate, 16 bytes per
-  // element in the scratch space, hence, 16*32 = 512.
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+  size_t scratch_0 = loop_boundaries.member.impl_scratch_level0();
+
+  const int blockDimy = ompx::block_dim(ompx::dim_y);
+  const int blockDimx = ompx::block_dim(ompx::dim_x);
+  const int threadIdy = ompx::thread_id(ompx::dim_y);
+
+  int team_scratch_index = threadIdy * blockDimx;
+  ValueType* buf =
+      static_cast<ValueType*>(llvm_omp_target_dynamic_shared_alloc()) +
+      scratch_0;
+
+  buf[threadIdy * blockDimx] = ValueType();
+
+  for (iType i = loop_boundaries.start + threadIdy; i < loop_boundaries.end;
+       i += blockDimy) {
+    ValueType tmp = ValueType();
+    lambda(i, tmp);
+    buf[team_scratch_index] += tmp;
+  }
+  ompx_sync_block_acq_rel();
+  if (threadIdy == 0) {
+    ValueType vector_reduce = ValueType();
+    for (int tid = 0; tid < blockDimy; ++tid)
+      vector_reduce += buf[tid * blockDimx];
+    buf[team_scratch_index] = vector_reduce;
+  }
+  ompx_sync_block_acq_rel();
+
+  if (threadIdy == 0) result = buf[team_scratch_index];
+
+#else
   static_assert(sizeof(ValueType) <=
                 Impl::OpenMPTargetExecTeamMember::TEAM_REDUCE_SIZE);
 
@@ -68,7 +98,8 @@ parallel_reduce(const Impl::TeamThreadRangeBoundariesStruct<
     }
   }
 
-  result = TeamThread_scratch[0];
+  result                  = TeamThread_scratch[0];
+#endif
 }
 
 // For some reason the actual version we wanted to write doesn't work
@@ -169,6 +200,41 @@ KOKKOS_INLINE_FUNCTION void parallel_reduce(
     const Impl::ThreadVectorRangeBoundariesStruct<
         iType, Impl::OpenMPTargetExecTeamMember>& loop_boundaries,
     const Lambda& lambda, ValueType& result) {
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+  size_t scratch_0 = loop_boundaries.member.impl_scratch_level0();
+
+  const int blockDimy = ompx::block_dim(ompx::dim_y);
+  const int blockDimx = ompx::block_dim(ompx::dim_x);
+  const int threadIdy = ompx::thread_id(ompx::dim_y);
+  const int threadIdx = ompx::thread_id(ompx::dim_y);
+
+  int vector_scratch_index = threadIdy * blockDimx;
+  int my_scratch_index     = vector_scratch_index + threadIdx;
+
+  ValueType* buf =
+      static_cast<ValueType*>(llvm_omp_target_dynamic_shared_alloc()) +
+      scratch_0 + vector_scratch_index;
+
+  buf[my_scratch_index] = ValueType();
+
+  for (iType i = loop_boundaries.start + threadIdy; i < loop_boundaries.end;
+       i += blockDimy) {
+    ValueType tmp = ValueType();
+    lambda(i, tmp);
+    buf[my_scratch_index] += tmp;
+  }
+  ompx_sync_block_acq_rel();
+  if (threadIdx == 0) {
+    ValueType vector_reduce = ValueType();
+    for (int tid = 0; tid < blockDimx; ++tid)
+      vector_reduce += buf[threadIdy * blockDimx + tid];
+    buf[vector_scratch_index] = vector_reduce;
+  }
+  ompx_sync_block_acq_rel();
+
+  if (threadIdx == 0) result = buf[vector_scratch_index];
+
+#else
   ValueType vector_reduce = ValueType();
 
   if constexpr (std::is_arithmetic<ValueType>::value) {
@@ -188,6 +254,7 @@ KOKKOS_INLINE_FUNCTION void parallel_reduce(
   }
 
   result = vector_reduce;
+#endif
 }
 
 template <typename iType, class Lambda, typename ReducerType>

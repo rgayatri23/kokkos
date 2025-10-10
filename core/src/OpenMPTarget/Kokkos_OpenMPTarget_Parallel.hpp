@@ -27,6 +27,8 @@
 #include "Kokkos_OpenMPTarget_Abort.hpp"
 #include <OpenMPTarget/Kokkos_OpenMPTarget_Macros.hpp>
 
+#define KOKKOS_IMPL_OPENMPTARGET_LLVM_EXTENSIONS
+
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 
@@ -81,6 +83,15 @@ class OpenMPTargetExecTeamMember {
   KOKKOS_INLINE_FUNCTION void* impl_reduce_scratch() const {
     return m_reduce_scratch;
   }
+
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+  KOKKOS_INLINE_FUNCTION size_t impl_scratch_level0() const {
+    return m_team_scratch_size[0];
+  }
+  KOKKOS_INLINE_FUNCTION void* get_scratch_ptr() const {
+    return (llvm_omp_target_dynamic_shared_alloc());
+  }
+#endif
 
   KOKKOS_INLINE_FUNCTION void team_barrier() const {
 #pragma omp barrier
@@ -358,11 +369,12 @@ class TeamPolicyInternal<Kokkos::Experimental::OpenMPTarget, Properties...>
     m_league_size = league_size_request;
 
     // Minimum team size should be 32 for OpenMPTarget backend.
-    if (team_size_request < 32) {
-      Kokkos::Impl::OpenMPTarget_abort(
-          "OpenMPTarget backend requires a minimum of 32 threads per team.\n");
-    } else
-      m_team_size = team_size_request;
+    /*if (team_size_request < 32) {*/
+    /*  Kokkos::Impl::OpenMPTarget_abort(*/
+    /*      "OpenMPTarget backend requires a minimum of 32 threads per
+     * team.\n");*/
+    /*} else*/
+    m_team_size = team_size_request;
 
     m_vector_length = vector_length_request;
     set_auto_chunk_size();

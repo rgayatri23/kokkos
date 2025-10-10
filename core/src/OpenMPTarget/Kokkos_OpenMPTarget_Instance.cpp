@@ -108,6 +108,15 @@ void OpenMPTargetInternal::impl_initialize() {
 #if defined(KOKKOS_IMPL_ARCH_NVIDIA_GPU)
   omp_set_num_teams(512);
 #endif
+
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+  // Generate a small kernel to get the warp size of the architecture.
+  KOKKOS_IMPL_OMPTARGET_PRAGMA(teams ompx_bare num_teams(1, 1, 1)
+                                   thread_limit(1, 1, 1) map(from
+                                                             : m_warp_size)) {
+    m_warp_size = __kmpc_get_warp_size();
+  }
+#endif
 }
 int OpenMPTargetInternal::impl_is_initialized() {
   return m_is_initialized ? 1 : 0;
@@ -158,6 +167,8 @@ void OpenMPTargetInternal::set_max_teams(int64_t team_size,
   omp_set_num_teams(max_active_teams * 2);
 }
 
+int OpenMPTargetInternal::get_warp_size() const { return m_warp_size; }
+
 void OpenMPTargetInternal::resize_scratch(int64_t team_size,
                                           int64_t shmem_size_L0,
                                           int64_t shmem_size_L1,
@@ -165,9 +176,7 @@ void OpenMPTargetInternal::resize_scratch(int64_t team_size,
   Kokkos::Experimental::OpenMPTargetSpace space;
   // Level-0 scratch when using clang/17 and higher comes from their OpenMP
   // extension, `ompx_dyn_cgroup_mem`.
-#if defined(KOKKOS_IMPL_OPENMPTARGET_LLVM_EXTENSIONS)
   shmem_size_L0 = 0;
-#endif
   const int64_t shmem_size =
       shmem_size_L0 + shmem_size_L1;  // L0 + L1 scratch memory per team.
   const int64_t padding = shmem_size * 10 / 100;  // Padding per team.
