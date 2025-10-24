@@ -54,28 +54,28 @@ class ParallelFor<FunctorType, Kokkos::RangePolicy<Traits...>,
 
     auto const a_functor(m_functor);
 
-/*#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)*/
-/*    const auto size      = end - begin;*/
-/*    const auto team_size = 128;*/
-/**/
-/*    const int nTeams = size / team_size + !!(size % team_size);*/
-/*#pragma omp target teams ompx_bare num_teams(nTeams, 1, 1) \*/
-/*    thread_limit(team_size, 1, 1) firstprivate(a_functor)*/
-/*    {*/
-/*      const auto blockIdx  = ompx::block_id(ompx::dim_x);*/
-/*      const auto blockDimx = ompx::block_dim(ompx::dim_x);*/
-/*      const auto threadIdx = ompx::thread_id(ompx::dim_x);*/
-/**/
-/*      const auto i = blockIdx * blockDimx + threadIdx + begin;*/
-/**/
-/*      if (i < end) a_functor(i);*/
-/*    }*/
-/*#else*/
+#if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
+    const auto size      = end - begin;
+    const auto team_size = 128;
+
+    const int nTeams = size / team_size + !!(size % team_size);
+#pragma omp target teams ompx_bare num_teams(nTeams, 1, 1) \
+    thread_limit(team_size, 1, 1) firstprivate(a_functor)
+    {
+      const auto blockIdx  = ompx::block_id(ompx::dim_x);
+      const auto blockDimx = ompx::block_dim(ompx::dim_x);
+      const auto threadIdx = ompx::thread_id(ompx::dim_x);
+
+      const auto i = blockIdx * blockDimx + threadIdx + begin;
+
+      if (i < end) a_functor(i);
+    }
+#else
 #pragma omp target teams distribute parallel for map(to : a_functor)
     for (auto i = begin; i < end; ++i) {
       a_functor(i);
     }
-    /*#endif*/
+#endif
   }
 
   ParallelFor(const FunctorType& arg_functor, Policy arg_policy)

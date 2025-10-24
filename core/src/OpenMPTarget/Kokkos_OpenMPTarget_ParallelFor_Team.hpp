@@ -129,9 +129,10 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
         "Kokkos::Experimental::OpenMPTarget parallel_for");
     Experimental::Impl::OpenMPTargetInternal::verify_initialized(
         "Kokkos::Experimental::OpenMPTarget parallel_for");
-    const auto league_size   = m_policy.league_size();
-    const auto team_size     = m_policy.team_size();
-    const auto vector_length = m_policy.impl_vector_length();
+    using IndexType               = typename Policy::index_type;
+    const IndexType league_size   = m_policy.league_size();
+    const IndexType team_size     = m_policy.team_size();
+    const IndexType vector_length = m_policy.impl_vector_length();
 
     size_t shmem_size_L0       = m_policy.scratch_size(0, team_size);
     const size_t shmem_size_L1 = m_policy.scratch_size(1, team_size);
@@ -143,7 +144,11 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
     auto const a_functor(m_functor);
 
     // Maximum active teams possible.
-    int max_active_teams = std::min(omp_get_max_teams(), league_size);
+    int max_active_teams =
+        std::min(static_cast<IndexType>(omp_get_max_teams()), league_size);
+
+    /*printf("0: league_size = %d, team_size = %d, vector_length =
+     * %d\n",league_size,team_size,vector_length);*/
 
     // If the league size is <=0, do not launch the kernel.
     if (max_active_teams <= 0) return;
@@ -151,16 +156,18 @@ class ParallelFor<FunctorType, Kokkos::TeamPolicy<Properties...>,
 #if defined(KOKKOS_IMPL_OPENMPTARGET_KERNEL_MODE)
     shmem_size_L0 += Impl::OpenMPTargetExecTeamMember::TEAM_REDUCE_SIZE;
     KOKKOS_IMPL_OMPTARGET_PRAGMA(
-        teams ompx_bare num_teams(max_active_teams, 1, 1) thread_limit(
-            vector_length, team_size, 1) firstprivate(a_functor, scratch_ptr)
-            KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(shmem_size_L0)) {
+        teams ompx_bare num_teams(max_active_teams, 1, 1)
+            thread_limit(vector_length, team_size, 1) firstprivate(scratch_ptr)
+                KOKKOS_IMPL_OMPX_DYN_CGROUP_MEM(shmem_size_L0)) {
       const auto blockIdx  = ompx::block_id(ompx::dim_x);
       const auto gridDimx  = ompx::grid_dim(ompx::dim_x);
       const auto blockDimy = ompx::block_dim(ompx::dim_y);
       const auto blockDimx = ompx::block_dim(ompx::dim_x);
 
-      for (int league_id = blockIdx; league_id < league_size;
+      for (IndexType league_id = blockIdx; league_id < league_size;
            league_id += gridDimx) {
+        /*printf("1: league_id = %d, league_size = %d, team_size = %d,
+         * vector_length = %d\n",league_id, gridDimx,blockDimy,blockDimx);*/
         typename Policy::member_type team(league_id, league_size, blockDimy,
                                           blockDimx, scratch_ptr, blockIdx,
                                           shmem_size_L0, shmem_size_L1);
