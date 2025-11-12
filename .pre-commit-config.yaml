@@ -8,7 +8,8 @@ repos:
     - id: end-of-file-fixer
       exclude: '^tpls/'
     - id: forbid-submodules
-    #- id: trailing-whitespace
+    - id: trailing-whitespace
+      exclude: '^tpls/'
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: 579d9fe3b1ee34ddd6ebc5def531f2f1acce622e # v16.0.0
