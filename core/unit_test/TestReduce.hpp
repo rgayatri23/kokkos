@@ -35,9 +35,6 @@ class ReduceFunctor {
   KOKKOS_INLINE_FUNCTION
   ReduceFunctor(const size_type& arg_nwork) : nwork(arg_nwork) {}
 
-  KOKKOS_INLINE_FUNCTION
-  ReduceFunctor(const ReduceFunctor& rhs) : nwork(rhs.nwork) {}
-
   /*
     KOKKOS_INLINE_FUNCTION
     void init( value_type & dst ) const
@@ -233,10 +230,6 @@ class CombinedReduceFunctorSameType {
   KOKKOS_INLINE_FUNCTION
   constexpr explicit CombinedReduceFunctorSameType(const size_type& arg_nwork)
       : nwork(arg_nwork) {}
-
-  KOKKOS_DEFAULTED_FUNCTION
-  constexpr CombinedReduceFunctorSameType(
-      const CombinedReduceFunctorSameType& rhs) = default;
 
   KOKKOS_INLINE_FUNCTION
   void operator()(size_type iwork, ValueType& dst1, ValueType& dst2,

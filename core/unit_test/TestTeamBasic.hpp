@@ -4,6 +4,7 @@
 #ifndef KOKKOS_TEST_TEAM_BASIC_HPP
 #define KOKKOS_TEST_TEAM_BASIC_HPP
 #include <TestTeam.hpp>
+#include <regex>
 
 namespace Test {
 
@@ -160,17 +161,21 @@ TEST(TEST_CATEGORY, large_team_scratch_size) {
   const int level   = 1;
   const int n_teams = 1;
 
-#if defined(KOKKOS_ENABLE_LARGE_MEM_TESTS) || defined(KOKKOS_ENABLE_CUDA) || \
-    defined(KOKKOS_ENABLE_HIP) || defined(KOKKOS_ENABLE_SYCL)
   //  The GPU backends use unsigned as size_type and we need to check that we
   //  didn't screw the scratch space calculation up, CPU backends anyway use
   //  size_t so less likely to screw up
+#ifdef KOKKOS_ENABLE_LARGE_MEM_TESTS
   const size_t per_team_extent = 502795560;
 #else
-  const size_t per_team_extent = 268435460;
+  const size_t per_team_extent =
+      std::is_same_v<TEST_EXECSPACE::memory_space, Kokkos::HostSpace>
+          ? 268435460
+          : 502795560;
 #endif
 
-  const size_t per_team_bytes = per_team_extent * sizeof(double);
+  const size_t per_team_bytes = std::min<size_t>(
+      Kokkos::TeamPolicy<TEST_EXECSPACE>::scratch_size_max(level),
+      per_team_extent * sizeof(double));
 
   Kokkos::TeamPolicy<TEST_EXECSPACE> policy(n_teams, 1);
   policy.set_scratch_size(level, Kokkos::PerTeam(per_team_bytes));
@@ -178,6 +183,114 @@ TEST(TEST_CATEGORY, large_team_scratch_size) {
   Kokkos::parallel_for(policy,
                        LargeTeamScratchFunctor<TEST_EXECSPACE>{per_team_bytes});
   Kokkos::fence();
+}
+
+void test_exceed_max_team_scratch_size_0() {
+  const int level = 0;
+  Kokkos::TeamPolicy<TEST_EXECSPACE> policy(1, 1);
+  auto dummy_functor =
+      KOKKOS_LAMBDA(Kokkos::TeamPolicy<TEST_EXECSPACE>::member_type){};
+  auto max_team_size =
+      policy.team_size_max(dummy_functor, Kokkos::ParallelForTag{});
+  policy                = Kokkos::TeamPolicy<TEST_EXECSPACE>(1, max_team_size);
+  auto max_scratch_size = policy.scratch_size_max(level);
+  policy.set_scratch_size(level, Kokkos::PerTeam(max_scratch_size));
+  auto max_team_size_with_scratch =
+      policy.team_size_max(dummy_functor, Kokkos::ParallelForTag{});
+  policy = Kokkos::TeamPolicy<TEST_EXECSPACE>(1, max_team_size_with_scratch);
+  auto new_max_scratch_size = policy.scratch_size_max(level);
+
+  ASSERT_THROW(
+      {
+        try {
+          // FIXME test a tighter bound for Cuda and HIP
+          Kokkos::parallel_for(
+              policy.set_scratch_size(
+                  level, Kokkos::PerTeam(new_max_scratch_size * 1.1)),
+              dummy_functor);
+        } catch (const std::runtime_error& e) {
+          std::cmatch base_match;
+          const char* regex_string =
+              "Requested too much scratch memory on level 0. Requested: "
+              "[0-9]*, Maximum: [0-9]*";
+          const std::regex regex(regex_string);
+          bool match = std::regex_search(e.what(), base_match, regex);
+          EXPECT_TRUE(match)
+              << "Expected:\n  " << regex_string << "\nGot:\n  " << e.what();
+          throw;
+        }
+      },
+      std::runtime_error);
+}
+
+TEST(TEST_CATEGORY_DEATH, exceed_max_team_scratch_size_0) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  test_exceed_max_team_scratch_size_0();
+}
+
+void test_exceed_max_team_scratch_size_1() {
+  const int level = 1;
+  Kokkos::TeamPolicy<TEST_EXECSPACE> policy(1, 1);
+  auto dummy_functor =
+      KOKKOS_LAMBDA(Kokkos::TeamPolicy<TEST_EXECSPACE>::member_type){};
+  auto max_scratch_size = policy.scratch_size_max(level);
+  ASSERT_THROW(
+      {
+        try {
+          Kokkos::parallel_for(
+              policy.set_scratch_size(level,
+                                      Kokkos::PerTeam(max_scratch_size + 1)),
+              dummy_functor);
+        } catch (const std::runtime_error& e) {
+          std::cmatch base_match;
+          const char* regex_string =
+              "Requested too much scratch memory on level 1. Requested: "
+              "[0-9]*, Maximum: [0-9]*";
+          const std::regex regex(regex_string);
+          bool match = std::regex_search(e.what(), base_match, regex);
+          EXPECT_TRUE(match)
+              << "Expected:\n  " << regex_string << "\nGot:\n  " << e.what();
+          throw;
+        }
+      },
+      std::runtime_error);
+}
+
+TEST(TEST_CATEGORY_DEATH, exceed_max_team_scratch_size_1) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  test_exceed_max_team_scratch_size_1();
+}
+
+void test_exceed_max_team_size() {
+  Kokkos::TeamPolicy<TEST_EXECSPACE> policy(1, 1);
+  auto dummy_functor =
+      KOKKOS_LAMBDA(Kokkos::TeamPolicy<TEST_EXECSPACE>::member_type){};
+  auto max_team_size =
+      policy.team_size_max(dummy_functor, Kokkos::ParallelForTag{});
+  ASSERT_THROW(
+      {
+        try {
+          Kokkos::parallel_for(
+              Kokkos::TeamPolicy<TEST_EXECSPACE>(1, max_team_size + 1),
+              dummy_functor);
+        } catch (const std::runtime_error& e) {
+          std::cmatch base_match;
+          const char* regex_string =
+              "Requested too large team size. Requested: "
+              "[0-9]*, Maximum: [0-9]*";
+          const std::regex regex(regex_string);
+          bool match = std::regex_search(e.what(), base_match, regex);
+          EXPECT_TRUE(match)
+              << "Expected:\n  " << regex_string << "\nGot:\n  " << e.what();
+          throw;
+        }
+      },
+      std::runtime_error);
+}
+
+TEST(TEST_CATEGORY_DEATH, exceed_max_team_size) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  test_exceed_max_team_size();
 }
 
 TEST(TEST_CATEGORY, team_broadcast_long) {
@@ -212,20 +325,10 @@ struct long_wrapper {
   long_wrapper(long val) : value(val) {}
 
   KOKKOS_FUNCTION
-  long_wrapper(const long_wrapper& val) : value(val.value) {}
-
-  KOKKOS_FUNCTION
   friend void operator+=(long_wrapper& lhs, const long_wrapper& rhs) {
     lhs.value += rhs.value;
   }
 
-  KOKKOS_FUNCTION
-  void operator=(const long_wrapper& other) { value = other.value; }
-
-  KOKKOS_FUNCTION
-  void operator=(const volatile long_wrapper& other) volatile {
-    value = other.value;
-  }
   KOKKOS_FUNCTION
   operator long() const { return value; }
 };

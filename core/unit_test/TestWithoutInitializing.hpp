@@ -97,6 +97,7 @@ TEST(TEST_CATEGORY, realloc_exec_space) {
 }
 
 namespace {
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 struct NonTriviallyCopyable {
   KOKKOS_FUNCTION NonTriviallyCopyable() {}
   KOKKOS_FUNCTION NonTriviallyCopyable(const NonTriviallyCopyable&) {}

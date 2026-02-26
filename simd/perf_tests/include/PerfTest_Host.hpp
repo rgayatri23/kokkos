@@ -123,15 +123,15 @@ void host_bench_reduction_op(benchmark::State& state,
 
   ReductionOp op;
 
-  View<mask_type*, ExecSpace> masks("masks", BENCH_SIZE / width);
+  std::array<mask_type, BENCH_SIZE / width> masks;
   std::srand(58051);
 
   for (std::size_t i = 0; i < masks.size(); i++) {
     if constexpr (std::is_same_v<RealAbi,
                                  Kokkos::Experimental::simd_abi::scalar>) {
-      masks(i) = mask_type(std::rand() % 2 == 0);
+      masks[i] = mask_type(std::rand() % 2 == 0);
     } else {
-      masks(i) = mask_type([=](std::size_t) { return std::rand() % 2 == 0; });
+      masks[i] = mask_type([=](std::size_t) { return std::rand() % 2 == 0; });
     }
   }
 
@@ -144,7 +144,7 @@ void host_bench_reduction_op(benchmark::State& state,
       a = simd_unchecked_load<simd_type>(
           wrapper.args->arg1.data() + i,
           Kokkos::Experimental::simd_flag_aligned);
-      res(i / width) = op.on_host(a, masks(i / width));
+      res(i / width) = op.on_host(a, masks[i / width]);
       if constexpr (force_serial) {
         benchmark::DoNotOptimize(res(i / width));
       }

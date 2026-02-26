@@ -284,14 +284,6 @@ class alignas(FloatType) floating_point_wrapper {
   KOKKOS_FUNCTION
   floating_point_wrapper() : val(0.0F) {}
 
-  // Copy constructors
-  KOKKOS_DEFAULTED_FUNCTION
-  floating_point_wrapper(const floating_point_wrapper&) noexcept = default;
-
-  KOKKOS_DEFAULTED_FUNCTION
-  floating_point_wrapper& operator=(const floating_point_wrapper&) noexcept =
-      default;
-
   KOKKOS_FUNCTION
   floating_point_wrapper(bit_comparison_type rhs) {
     val = Kokkos::bit_cast<impl_type>(rhs);

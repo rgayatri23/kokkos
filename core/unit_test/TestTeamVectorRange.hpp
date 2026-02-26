@@ -28,21 +28,6 @@ struct my_complex {
   }
 
   KOKKOS_INLINE_FUNCTION
-  my_complex(const my_complex& src) {
-    re    = src.re;
-    im    = src.im;
-    dummy = src.dummy;
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  my_complex& operator=(const my_complex& src) {
-    re    = src.re;
-    im    = src.im;
-    dummy = src.dummy;
-    return *this;
-  }
-
-  KOKKOS_INLINE_FUNCTION
   my_complex(const double& val) {
     re    = val;
     im    = 0.0;
@@ -385,8 +370,12 @@ bool Test(int test) {
 #else
   int team_size = 33;
 #endif
-  int const concurrency = ExecutionSpace().concurrency();
-  if (team_size > concurrency) team_size = concurrency;
+  int const max_team_size =
+      Kokkos::TeamPolicy<ExecutionSpace>(1, 1).team_size_max(
+          KOKKOS_LAMBDA(
+              typename Kokkos::TeamPolicy<ExecutionSpace>::member_type){},
+          Kokkos::ParallelForTag{});
+  if (team_size > max_team_size) team_size = max_team_size;
   passed = passed && test_scalar<int, ExecutionSpace>(317, team_size, test);
   passed = passed &&
            test_scalar<long long int, ExecutionSpace>(317, team_size, test);

@@ -775,14 +775,6 @@ class basic_simd<double, simd_abi::avx2_fixed_size<4>> {
   static constexpr std::integral_constant<Impl::simd_size_t, 4> size{};
 
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd() noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd const&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd&&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd const&) noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd&&) noexcept = default;
   template <class U>
     requires std::convertible_to<U, value_type>
   // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
@@ -1172,14 +1164,6 @@ class basic_simd<float, simd_abi::avx2_fixed_size<4>> {
   static constexpr std::integral_constant<Impl::simd_size_t, 4> size{};
 
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd() noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd const&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd&&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd const&) noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd&&) noexcept = default;
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION constexpr explicit basic_simd(
       __m128 const& value_in) noexcept
       : m_value(value_in) {}
@@ -1555,14 +1539,6 @@ class basic_simd<float, simd_abi::avx2_fixed_size<8>> {
   static constexpr std::integral_constant<Impl::simd_size_t, 8> size{};
 
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd() noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd const&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd&&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd const&) noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd&&) noexcept = default;
   template <class U>
     requires std::convertible_to<U, value_type>
   // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
@@ -1947,14 +1923,6 @@ class basic_simd<std::int32_t, simd_abi::avx2_fixed_size<4>> {
   static constexpr std::integral_constant<Impl::simd_size_t, 4> size{};
 
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd() noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd const&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd&&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd const&) noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd&&) noexcept = default;
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION constexpr explicit basic_simd(
       __m128i const& value_in) noexcept
       : m_value(value_in) {}
@@ -2176,6 +2144,30 @@ trunc(Experimental::basic_simd<
       _mm256_cvtepi32_pd(static_cast<__m128i>(a)));
 }
 
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::int32_t,
+                         Experimental::simd_abi::avx2_fixed_size<4>>
+max(Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::avx2_fixed_size<4>> const& a,
+    Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::avx2_fixed_size<4>> const& b) {
+  return Experimental::basic_simd<std::int32_t,
+                                  Experimental::simd_abi::avx2_fixed_size<4>>(
+      _mm_max_epi32(static_cast<__m128i>(a), static_cast<__m128i>(b)));
+}
+
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::int32_t,
+                         Experimental::simd_abi::avx2_fixed_size<4>>
+min(Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::avx2_fixed_size<4>> const& a,
+    Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::avx2_fixed_size<4>> const& b) {
+  return Experimental::basic_simd<std::int32_t,
+                                  Experimental::simd_abi::avx2_fixed_size<4>>(
+      _mm_min_epi32(static_cast<__m128i>(a), static_cast<__m128i>(b)));
+}
+
 namespace Experimental {
 
 template <typename SimdType, typename... Flags>
@@ -2294,14 +2286,6 @@ class basic_simd<std::int32_t, simd_abi::avx2_fixed_size<8>> {
   static constexpr std::integral_constant<Impl::simd_size_t, 8> size{};
 
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd() noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd const&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd&&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd const&) noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd&&) noexcept = default;
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION constexpr explicit basic_simd(
       __m256i const& value_in) noexcept
       : m_value(value_in) {}
@@ -2522,6 +2506,30 @@ trunc(Experimental::basic_simd<
       _mm256_cvtepi32_ps(static_cast<__m256i>(a)));
 }
 
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::int32_t,
+                         Experimental::simd_abi::avx2_fixed_size<8>>
+max(Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::avx2_fixed_size<8>> const& a,
+    Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::avx2_fixed_size<8>> const& b) {
+  return Experimental::basic_simd<std::int32_t,
+                                  Experimental::simd_abi::avx2_fixed_size<8>>(
+      _mm256_max_epi32(static_cast<__m256i>(a), static_cast<__m256i>(b)));
+}
+
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::int32_t,
+                         Experimental::simd_abi::avx2_fixed_size<8>>
+min(Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::avx2_fixed_size<8>> const& a,
+    Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::avx2_fixed_size<8>> const& b) {
+  return Experimental::basic_simd<std::int32_t,
+                                  Experimental::simd_abi::avx2_fixed_size<8>>(
+      _mm256_min_epi32(static_cast<__m256i>(a), static_cast<__m256i>(b)));
+}
+
 namespace Experimental {
 
 template <typename SimdType, typename... Flags>
@@ -2642,14 +2650,6 @@ class basic_simd<std::int64_t, simd_abi::avx2_fixed_size<4>> {
   static constexpr std::integral_constant<Impl::simd_size_t, 4> size{};
 
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd() noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd const&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd&&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd const&) noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd&&) noexcept = default;
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION constexpr explicit basic_simd(
       __m256i const& value_in) noexcept
       : m_value(value_in) {}
@@ -2887,6 +2887,32 @@ trunc(Experimental::basic_simd<
       _mm256_setr_pd(a[0], a[1], a[2], a[3]));
 }
 
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::int64_t,
+                         Experimental::simd_abi::avx2_fixed_size<4>>
+max(Experimental::basic_simd<
+        std::int64_t, Experimental::simd_abi::avx2_fixed_size<4>> const& a,
+    Experimental::basic_simd<
+        std::int64_t, Experimental::simd_abi::avx2_fixed_size<4>> const& b) {
+  return Experimental::basic_simd<std::int64_t,
+                                  Experimental::simd_abi::avx2_fixed_size<4>>(
+      _mm256_blendv_epi8(static_cast<__m256i>(a), static_cast<__m256i>(b),
+                         static_cast<__m256i>(b > a)));
+}
+
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::int64_t,
+                         Experimental::simd_abi::avx2_fixed_size<4>>
+min(Experimental::basic_simd<
+        std::int64_t, Experimental::simd_abi::avx2_fixed_size<4>> const& a,
+    Experimental::basic_simd<
+        std::int64_t, Experimental::simd_abi::avx2_fixed_size<4>> const& b) {
+  return Experimental::basic_simd<std::int64_t,
+                                  Experimental::simd_abi::avx2_fixed_size<4>>(
+      _mm256_blendv_epi8(static_cast<__m256i>(a), static_cast<__m256i>(b),
+                         static_cast<__m256i>(b < a)));
+}
+
 namespace Experimental {
 
 template <typename SimdType, typename... Flags>
@@ -3007,14 +3033,6 @@ class basic_simd<std::uint64_t, simd_abi::avx2_fixed_size<4>> {
   static constexpr std::integral_constant<Impl::simd_size_t, 4> size{};
 
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd() noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd const&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd&&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd const&) = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd&&) noexcept = default;
   template <class U>
     requires std::convertible_to<U, value_type>
   // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
@@ -3250,6 +3268,32 @@ trunc(Experimental::basic_simd<
       _mm256_setr_pd(a[0], a[1], a[2], a[3]));
 }
 
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::uint64_t,
+                         Experimental::simd_abi::avx2_fixed_size<4>>
+max(Experimental::basic_simd<
+        std::uint64_t, Experimental::simd_abi::avx2_fixed_size<4>> const& a,
+    Experimental::basic_simd<
+        std::uint64_t, Experimental::simd_abi::avx2_fixed_size<4>> const& b) {
+  return Experimental::basic_simd<std::uint64_t,
+                                  Experimental::simd_abi::avx2_fixed_size<4>>(
+      _mm256_blendv_epi8(static_cast<__m256i>(a), static_cast<__m256i>(b),
+                         static_cast<__m256i>(b > a)));
+}
+
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::uint64_t,
+                         Experimental::simd_abi::avx2_fixed_size<4>>
+min(Experimental::basic_simd<
+        std::uint64_t, Experimental::simd_abi::avx2_fixed_size<4>> const& a,
+    Experimental::basic_simd<
+        std::uint64_t, Experimental::simd_abi::avx2_fixed_size<4>> const& b) {
+  return Experimental::basic_simd<std::uint64_t,
+                                  Experimental::simd_abi::avx2_fixed_size<4>>(
+      _mm256_blendv_epi8(static_cast<__m256i>(a), static_cast<__m256i>(b),
+                         static_cast<__m256i>(b < a)));
+}
+
 namespace Experimental {
 
 template <typename SimdType, typename... Flags>
@@ -3417,6 +3461,356 @@ KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
 basic_simd<std::uint64_t, simd_abi::avx2_fixed_size<4>>::basic_simd(
     basic_simd<std::int64_t, abi_type> const& other) noexcept
     : m_value(static_cast<__m256i>(other)) {}
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM(
+    double, simd_abi::avx2_fixed_size<4>, {
+      __m128i idx = static_cast<__m128i>(
+          basic_simd<std::int32_t, simd_abi::avx2_fixed_size<4>>{indices});
+      return V(_mm256_i32gather_pd(std::ranges::data(in), idx, 8));
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM_WITH_MASK(
+    double, simd_abi::avx2_fixed_size<4>, {
+      using value_type = typename V::value_type;
+      using abi_type   = typename V::abi_type;
+      __m128i idx =
+          static_cast<__m128i>(basic_simd<std::int32_t, abi_type>{indices});
+      __m256d mmask =
+          static_cast<__m256d>(basic_simd_mask<double, abi_type>{mask});
+      return V(_mm256_mask_i32gather_pd(_mm256_set1_pd(value_type{}),
+                                        std::ranges::data(in), idx, mmask, 8));
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM(
+    double, simd_abi::avx2_fixed_size<4>,
+    { return unchecked_gather_from<V>(in, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM_WITH_MASK(
+    double, simd_abi::avx2_fixed_size<4>,
+    { return unchecked_gather_from<V>(in, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO(
+    double, simd_abi::avx2_fixed_size<4>, {
+      for (Impl::simd_size_t lane = 0; lane < v.size(); ++lane) {
+        out[indices[lane]] = v[lane];
+      }
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO_WITH_MASK(
+    double, simd_abi::avx2_fixed_size<4>, {
+      for (Impl::simd_size_t lane = 0; lane < v.size(); ++lane) {
+        if (mask[lane]) out[indices[lane]] = v[lane];
+      }
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO(
+    double, simd_abi::avx2_fixed_size<4>,
+    { unchecked_scatter_to<V>(v, out, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO_WITH_MASK(
+    double, simd_abi::avx2_fixed_size<4>,
+    { unchecked_scatter_to<V>(v, out, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM(
+    float, simd_abi::avx2_fixed_size<4>, {
+      __m128i idx = static_cast<__m128i>(
+          basic_simd<std::int32_t, simd_abi::avx2_fixed_size<4>>{indices});
+      return V(_mm_i32gather_ps(std::ranges::data(in), idx, 4));
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM_WITH_MASK(
+    float, simd_abi::avx2_fixed_size<4>, {
+      using value_type = typename V::value_type;
+      using abi_type   = typename V::abi_type;
+      __m128i idx =
+          static_cast<__m128i>(basic_simd<std::int32_t, abi_type>{indices});
+      __m128 mmask =
+          static_cast<__m128>(basic_simd_mask<float, abi_type>{mask});
+      return V(_mm_mask_i32gather_ps(_mm_set1_ps(value_type{}),
+                                     std::ranges::data(in), idx, mmask, 4));
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM(
+    float, simd_abi::avx2_fixed_size<4>,
+    { return unchecked_gather_from<V>(in, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM_WITH_MASK(
+    float, simd_abi::avx2_fixed_size<4>,
+    { return unchecked_gather_from<V>(in, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO(
+    float, simd_abi::avx2_fixed_size<4>, {
+      for (Impl::simd_size_t lane = 0; lane < v.size(); ++lane) {
+        out[indices[lane]] = v[lane];
+      }
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO_WITH_MASK(
+    float, simd_abi::avx2_fixed_size<4>, {
+      for (Impl::simd_size_t lane = 0; lane < v.size(); ++lane) {
+        if (mask[lane]) out[indices[lane]] = v[lane];
+      }
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO(
+    float, simd_abi::avx2_fixed_size<4>,
+    { unchecked_scatter_to<V>(v, out, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO_WITH_MASK(
+    float, simd_abi::avx2_fixed_size<4>,
+    { unchecked_scatter_to<V>(v, out, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM(
+    float, simd_abi::avx2_fixed_size<8>, {
+      __m256i idx = static_cast<__m256i>(
+          basic_simd<std::int32_t, simd_abi::avx2_fixed_size<8>>{indices});
+      return V(_mm256_i32gather_ps(std::ranges::data(in), idx, 4));
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM_WITH_MASK(
+    float, simd_abi::avx2_fixed_size<8>, {
+      using value_type = typename V::value_type;
+      using abi_type   = typename V::abi_type;
+      __m256i idx =
+          static_cast<__m256i>(basic_simd<std::int32_t, abi_type>{indices});
+      __m256 mmask =
+          static_cast<__m256>(basic_simd_mask<float, abi_type>{mask});
+      return V(_mm256_mask_i32gather_ps(_mm256_set1_ps(value_type{}),
+                                        std::ranges::data(in), idx, mmask, 4));
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM(
+    float, simd_abi::avx2_fixed_size<8>,
+    { return unchecked_gather_from<V>(in, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM_WITH_MASK(
+    float, simd_abi::avx2_fixed_size<8>,
+    { return unchecked_gather_from<V>(in, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO(
+    float, simd_abi::avx2_fixed_size<8>, {
+      for (Impl::simd_size_t lane = 0; lane < v.size(); ++lane) {
+        out[indices[lane]] = v[lane];
+      }
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO_WITH_MASK(
+    float, simd_abi::avx2_fixed_size<8>, {
+      for (Impl::simd_size_t lane = 0; lane < v.size(); ++lane) {
+        if (mask[lane]) out[indices[lane]] = v[lane];
+      }
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO(
+    float, simd_abi::avx2_fixed_size<8>,
+    { unchecked_scatter_to<V>(v, out, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO_WITH_MASK(
+    float, simd_abi::avx2_fixed_size<8>,
+    { unchecked_scatter_to<V>(v, out, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM(
+    std::int32_t, simd_abi::avx2_fixed_size<4>, {
+      __m128i idx = static_cast<__m128i>(
+          basic_simd<std::int32_t, simd_abi::avx2_fixed_size<4>>{indices});
+      return V(_mm_i32gather_epi32(std::ranges::data(in), idx, 4));
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM_WITH_MASK(
+    std::int32_t, simd_abi::avx2_fixed_size<4>, {
+      using value_type = typename V::value_type;
+      using abi_type   = typename V::abi_type;
+      __m128i idx =
+          static_cast<__m128i>(basic_simd<std::int32_t, abi_type>{indices});
+      __m128i mmask =
+          static_cast<__m128i>(basic_simd_mask<std::int32_t, abi_type>{mask});
+      return V(_mm_mask_i32gather_epi32(_mm_set1_epi32(value_type{}),
+                                        std::ranges::data(in), idx, mmask, 4));
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM(
+    std::int32_t, simd_abi::avx2_fixed_size<4>,
+    { return unchecked_gather_from<V>(in, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM_WITH_MASK(
+    std::int32_t, simd_abi::avx2_fixed_size<4>,
+    { return unchecked_gather_from<V>(in, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO(
+    std::int32_t, simd_abi::avx2_fixed_size<4>, {
+      for (Impl::simd_size_t lane = 0; lane < v.size(); ++lane) {
+        out[indices[lane]] = v[lane];
+      }
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO_WITH_MASK(
+    std::int32_t, simd_abi::avx2_fixed_size<4>, {
+      for (Impl::simd_size_t lane = 0; lane < v.size(); ++lane) {
+        if (mask[lane]) out[indices[lane]] = v[lane];
+      }
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO(
+    std::int32_t, simd_abi::avx2_fixed_size<4>,
+    { unchecked_scatter_to<V>(v, out, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO_WITH_MASK(
+    std::int32_t, simd_abi::avx2_fixed_size<4>,
+    { unchecked_scatter_to<V>(v, out, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM(
+    std::int32_t, simd_abi::avx2_fixed_size<8>, {
+      __m256i idx = static_cast<__m256i>(
+          basic_simd<std::int32_t, simd_abi::avx2_fixed_size<8>>{indices});
+      return V(_mm256_i32gather_epi32(std::ranges::data(in), idx, 4));
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM_WITH_MASK(
+    std::int32_t, simd_abi::avx2_fixed_size<8>, {
+      using value_type = typename V::value_type;
+      using abi_type   = typename V::abi_type;
+      __m256i idx =
+          static_cast<__m256i>(basic_simd<std::int32_t, abi_type>{indices});
+      __m256i mmask =
+          static_cast<__m256i>(basic_simd_mask<std::int32_t, abi_type>{mask});
+      return V(_mm256_mask_i32gather_epi32(_mm256_set1_epi32(value_type{}),
+                                           std::ranges::data(in), idx, mmask,
+                                           4));
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM(
+    std::int32_t, simd_abi::avx2_fixed_size<8>,
+    { return unchecked_gather_from<V>(in, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM_WITH_MASK(
+    std::int32_t, simd_abi::avx2_fixed_size<8>,
+    { return unchecked_gather_from<V>(in, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO(
+    std::int32_t, simd_abi::avx2_fixed_size<8>, {
+      for (Impl::simd_size_t lane = 0; lane < v.size(); ++lane) {
+        out[indices[lane]] = v[lane];
+      }
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO_WITH_MASK(
+    std::int32_t, simd_abi::avx2_fixed_size<8>, {
+      for (Impl::simd_size_t lane = 0; lane < v.size(); ++lane) {
+        if (mask[lane]) out[indices[lane]] = v[lane];
+      }
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO(
+    std::int32_t, simd_abi::avx2_fixed_size<8>,
+    { unchecked_scatter_to<V>(v, out, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO_WITH_MASK(
+    std::int32_t, simd_abi::avx2_fixed_size<8>,
+    { unchecked_scatter_to<V>(v, out, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM(
+    std::int64_t, simd_abi::avx2_fixed_size<4>, {
+      __m128i idx = static_cast<__m128i>(
+          basic_simd<std::int32_t, simd_abi::avx2_fixed_size<4>>{indices});
+      return V(_mm256_i32gather_epi64(
+          reinterpret_cast<long long const*>(std::ranges::data(in)), idx, 8));
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM_WITH_MASK(
+    std::int64_t, simd_abi::avx2_fixed_size<4>, {
+      using value_type = typename V::value_type;
+      using abi_type   = typename V::abi_type;
+      __m128i idx =
+          static_cast<__m128i>(basic_simd<std::int32_t, abi_type>{indices});
+      __m256i mmask =
+          static_cast<__m256i>(basic_simd_mask<std::int64_t, abi_type>{mask});
+      return V(_mm256_mask_i32gather_epi64(
+          _mm256_set1_epi64x(value_type{}),
+          reinterpret_cast<long long const*>(std::ranges::data(in)), idx, mmask,
+          8));
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM(
+    std::int64_t, simd_abi::avx2_fixed_size<4>,
+    { return unchecked_gather_from<V>(in, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM_WITH_MASK(
+    std::int64_t, simd_abi::avx2_fixed_size<4>,
+    { return unchecked_gather_from<V>(in, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO(
+    std::int64_t, simd_abi::avx2_fixed_size<4>, {
+      for (Impl::simd_size_t lane = 0; lane < v.size(); ++lane) {
+        out[indices[lane]] = v[lane];
+      }
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO_WITH_MASK(
+    std::int64_t, simd_abi::avx2_fixed_size<4>, {
+      for (Impl::simd_size_t lane = 0; lane < v.size(); ++lane) {
+        if (mask[lane]) out[indices[lane]] = v[lane];
+      }
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO(
+    std::int64_t, simd_abi::avx2_fixed_size<4>,
+    { unchecked_scatter_to<V>(v, out, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO_WITH_MASK(
+    std::int64_t, simd_abi::avx2_fixed_size<4>,
+    { unchecked_scatter_to<V>(v, out, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM(
+    std::uint64_t, simd_abi::avx2_fixed_size<4>, {
+      __m128i idx = static_cast<__m128i>(
+          basic_simd<std::int32_t, simd_abi::avx2_fixed_size<4>>{indices});
+      return V(_mm256_i32gather_epi64(
+          reinterpret_cast<long long const*>(std::ranges::data(in)), idx, 8));
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM_WITH_MASK(
+    std::uint64_t, simd_abi::avx2_fixed_size<4>, {
+      using value_type = typename V::value_type;
+      using abi_type   = typename V::abi_type;
+      __m128i idx =
+          static_cast<__m128i>(basic_simd<std::int32_t, abi_type>{indices});
+      __m256i mmask =
+          static_cast<__m256i>(basic_simd_mask<std::int64_t, abi_type>{mask});
+      return V(_mm256_mask_i32gather_epi64(
+          _mm256_set1_epi64x(value_type{}),
+          reinterpret_cast<long long const*>(std::ranges::data(in)), idx, mmask,
+          8));
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM(
+    std::uint64_t, simd_abi::avx2_fixed_size<4>,
+    { return unchecked_gather_from<V>(in, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM_WITH_MASK(
+    std::uint64_t, simd_abi::avx2_fixed_size<4>,
+    { return unchecked_gather_from<V>(in, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO(
+    std::uint64_t, simd_abi::avx2_fixed_size<4>, {
+      for (Impl::simd_size_t lane = 0; lane < v.size(); ++lane) {
+        out[indices[lane]] = v[lane];
+      }
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO_WITH_MASK(
+    std::uint64_t, simd_abi::avx2_fixed_size<4>, {
+      for (Impl::simd_size_t lane = 0; lane < v.size(); ++lane) {
+        if (mask[lane]) out[indices[lane]] = v[lane];
+      }
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO(
+    std::uint64_t, simd_abi::avx2_fixed_size<4>,
+    { unchecked_scatter_to<V>(v, out, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO_WITH_MASK(
+    std::uint64_t, simd_abi::avx2_fixed_size<4>,
+    { unchecked_scatter_to<V>(v, out, mask, indices, flag); })
 
 #ifdef KOKKOS_ENABLE_DEPRECATED_CODE_4
 KOKKOS_IMPL_DISABLE_DEPRECATED_WARNINGS_PUSH()

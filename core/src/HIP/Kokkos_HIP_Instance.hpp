@@ -109,6 +109,7 @@ struct SharedResourceLock {
   SharedResourceLock(SharedResourceLock &&other)                 = delete;
   SharedResourceLock &operator=(SharedResourceLock const &other) = delete;
   SharedResourceLock &operator=(SharedResourceLock &&other)      = delete;
+  ~SharedResourceLock()                                          = default;
 
   // Acquire the right to use the shared resource. The instance is locked first.
   [[nodiscard]] auto acquire() {

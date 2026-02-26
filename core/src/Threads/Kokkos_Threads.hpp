@@ -111,8 +111,13 @@ class Threads {
 
   uint32_t impl_instance_id() const noexcept { return 1; }
 
-  Threads(const Threads&)            = default;
-  Threads& operator=(const Threads&) = default;
+  KOKKOS_DEFAULTED_FUNCTION Threads(const Threads&) = default;
+  KOKKOS_FUNCTION Threads(Threads&& other)
+      : Threads(static_cast<const Threads&>(other)) {}
+  KOKKOS_DEFAULTED_FUNCTION Threads& operator=(const Threads&) = default;
+  KOKKOS_FUNCTION Threads& operator=(Threads&& other) {
+    return *this = static_cast<const Threads&>(other);
+  }
 
   ~Threads() { Impl::check_execution_space_destructor_precondition(name()); }
 

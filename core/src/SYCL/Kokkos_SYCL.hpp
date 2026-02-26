@@ -43,8 +43,12 @@ class SYCL {
 
   using scratch_memory_space = ScratchMemorySpace<SYCL>;
 
-  SYCL(const SYCL&)            = default;
+  SYCL(const SYCL&) = default;
+  SYCL(SYCL&& other) : SYCL(static_cast<const SYCL&>(other)) {}
   SYCL& operator=(const SYCL&) = default;
+  SYCL& operator=(SYCL&& other) {
+    return *this = static_cast<const SYCL&>(other);
+  }
   ~SYCL();
   SYCL();
   explicit SYCL(const sycl::queue&);
@@ -53,10 +57,7 @@ class SYCL {
     return m_space_instance->impl_get_instance_id();
   }
 
-  sycl::queue& sycl_queue() const noexcept {
-    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-    return *m_space_instance->m_queue;
-  }
+  sycl::queue& sycl_queue() const noexcept { return m_space_instance->m_queue; }
 
   //@}
   //------------------------------------

@@ -35,6 +35,7 @@ class N {  // not default constructible
 };
 
 template <class V>
+// NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 class H {  // constructible and destructible only from on the host side
   V v_;
 

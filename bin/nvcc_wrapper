@@ -150,7 +150,15 @@ do
   *.cpp|*.cxx|*.cc|*.C|*.c++|*.cu)
     cpp_files="$cpp_files $1"
     ;;
-   # Ensure we only have one optimization flag because NVCC doesn't allow multiple
+  #fast-compile level for device code, tradeoff between compilation speed and runtime performance
+  -Ofc=*|--Ofast-compile=*)
+    cuda_args="$cuda_args $1"
+    ;;
+  -Ofc|--Ofast-compile)
+    cuda_args="$cuda_args $1 $2"
+    shift
+    ;;
+  # Ensure we only have one optimization flag because NVCC doesn't allow multiple
   -O*)
     if [ -n "$optimization_flag" ]; then
         if [ "$1" = "$optimization_flag" ]; then
@@ -236,10 +244,10 @@ do
     cuda_args="$cuda_args $1"
     ;;
   #Handle known nvcc args that have an argument
-  -maxrregcount=*|--maxrregcount=*|-time=*|-Xptxas=*)
+  -maxrregcount=*|--maxrregcount=*|-time=*|-Xptxas=*|--fdevice-time-trace=*|-fdevice-time-trace=*)
     cuda_args="$cuda_args $1"
     ;;
-  -maxrregcount|--default-stream|-Xnvlink|--ftz|--prec-div|--prec-sqrt|--fmad|-cudart|--cudart|-include|-time|-Xptxas)
+  -maxrregcount|--default-stream|-Xnvlink|--ftz|--prec-div|--prec-sqrt|--fmad|-cudart|--cudart|-include|-time|-Xptxas|--fdevice-time-trace|-fdevice-time-trace)
     cuda_args="$cuda_args $1 $2"
     shift
     ;;

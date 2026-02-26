@@ -405,14 +405,6 @@ class basic_simd<double, simd_abi::neon_fixed_size<2>> {
   static constexpr std::integral_constant<Impl::simd_size_t, 2> size{};
 
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd() noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd const&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd&&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd const&) noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd&&) noexcept = default;
   template <class U>
     requires std::convertible_to<U, value_type>
   // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
@@ -741,6 +733,45 @@ KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION void simd_partial_store(
   if (mask[1]) ptr[1] = simd[1];
 }
 
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM(
+    double, simd_abi::neon_fixed_size<2>,
+    { return V([&](Impl::simd_size_t i) { return in[indices[i]]; }); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM_WITH_MASK(
+    double, simd_abi::neon_fixed_size<2>, {
+      return V([&](Impl::simd_size_t i) {
+        return mask[i] ? in[indices[i]] : typename V::value_type{};
+      });
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM(
+    double, simd_abi::neon_fixed_size<2>,
+    { return unchecked_gather_from<V>(in, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM_WITH_MASK(
+    double, simd_abi::neon_fixed_size<2>,
+    { return unchecked_gather_from<V>(in, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO(
+    double, simd_abi::neon_fixed_size<2>, {
+      out[indices[0]] = v[0];
+      out[indices[1]] = v[1];
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO_WITH_MASK(
+    double, simd_abi::neon_fixed_size<2>, {
+      if (mask[0]) out[indices[0]] = v[0];
+      if (mask[1]) out[indices[1]] = v[1];
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO(
+    double, simd_abi::neon_fixed_size<2>,
+    { unchecked_scatter_to<V>(v, out, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO_WITH_MASK(
+    double, simd_abi::neon_fixed_size<2>,
+    { unchecked_scatter_to<V>(v, out, mask, indices, flag); })
+
 KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
 basic_simd<double, simd_abi::neon_fixed_size<2>> condition(
     basic_simd_mask<double, simd_abi::neon_fixed_size<2>> const& a,
@@ -763,14 +794,6 @@ class basic_simd<float, simd_abi::neon_fixed_size<2>> {
   static constexpr std::integral_constant<Impl::simd_size_t, 2> size{};
 
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd() noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd const&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd&&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd const&) noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd&&) noexcept = default;
   template <class U>
     requires std::convertible_to<U, value_type>
   // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
@@ -1087,6 +1110,45 @@ KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION void simd_partial_store(
   if (mask[1]) ptr[1] = simd[1];
 }
 
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM(
+    float, simd_abi::neon_fixed_size<2>,
+    { return V([&](Impl::simd_size_t i) { return in[indices[i]]; }); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM_WITH_MASK(
+    float, simd_abi::neon_fixed_size<2>, {
+      return V([&](Impl::simd_size_t i) {
+        return mask[i] ? in[indices[i]] : typename V::value_type{};
+      });
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM(
+    float, simd_abi::neon_fixed_size<2>,
+    { return unchecked_gather_from<V>(in, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM_WITH_MASK(
+    float, simd_abi::neon_fixed_size<2>,
+    { return unchecked_gather_from<V>(in, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO(
+    float, simd_abi::neon_fixed_size<2>, {
+      out[indices[0]] = v[0];
+      out[indices[1]] = v[1];
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO_WITH_MASK(
+    float, simd_abi::neon_fixed_size<2>, {
+      if (mask[0]) out[indices[0]] = v[0];
+      if (mask[1]) out[indices[1]] = v[1];
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO(
+    float, simd_abi::neon_fixed_size<2>,
+    { unchecked_scatter_to<V>(v, out, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO_WITH_MASK(
+    float, simd_abi::neon_fixed_size<2>,
+    { unchecked_scatter_to<V>(v, out, mask, indices, flag); })
+
 KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
 basic_simd<float, simd_abi::neon_fixed_size<2>> condition(
     basic_simd_mask<float, simd_abi::neon_fixed_size<2>> const& a,
@@ -1109,14 +1171,6 @@ class basic_simd<float, simd_abi::neon_fixed_size<4>> {
   static constexpr std::integral_constant<Impl::simd_size_t, 4> size{};
 
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd() noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd const&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd&&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd const&) noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd&&) noexcept = default;
   template <class U>
     requires std::convertible_to<U, value_type>
   // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
@@ -1441,6 +1495,49 @@ KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION void simd_partial_store(
   if (mask[3]) ptr[3] = simd[3];
 }
 
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM(
+    float, simd_abi::neon_fixed_size<4>,
+    { return V([&](Impl::simd_size_t i) { return in[indices[i]]; }); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM_WITH_MASK(
+    float, simd_abi::neon_fixed_size<4>, {
+      return V([&](Impl::simd_size_t i) {
+        return mask[i] ? in[indices[i]] : typename V::value_type{};
+      });
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM(
+    float, simd_abi::neon_fixed_size<4>,
+    { return unchecked_gather_from<V>(in, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM_WITH_MASK(
+    float, simd_abi::neon_fixed_size<4>,
+    { return unchecked_gather_from<V>(in, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO(
+    float, simd_abi::neon_fixed_size<4>, {
+      out[indices[0]] = v[0];
+      out[indices[1]] = v[1];
+      out[indices[2]] = v[2];
+      out[indices[3]] = v[3];
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO_WITH_MASK(
+    float, simd_abi::neon_fixed_size<4>, {
+      if (mask[0]) out[indices[0]] = v[0];
+      if (mask[1]) out[indices[1]] = v[1];
+      if (mask[2]) out[indices[2]] = v[2];
+      if (mask[3]) out[indices[3]] = v[3];
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO(
+    float, simd_abi::neon_fixed_size<4>,
+    { unchecked_scatter_to<V>(v, out, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO_WITH_MASK(
+    float, simd_abi::neon_fixed_size<4>,
+    { unchecked_scatter_to<V>(v, out, mask, indices, flag); })
+
 KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
 basic_simd<float, simd_abi::neon_fixed_size<4>> condition(
     basic_simd_mask<float, simd_abi::neon_fixed_size<4>> const& a,
@@ -1463,14 +1560,6 @@ class basic_simd<std::int32_t, simd_abi::neon_fixed_size<2>> {
   static constexpr std::integral_constant<Impl::simd_size_t, 2> size{};
 
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd() noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd const&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd&&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd const&) noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd&&) noexcept = default;
   template <class U>
     requires std::convertible_to<U, value_type>
   // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
@@ -1684,6 +1773,30 @@ trunc(Experimental::basic_simd<
   return a;
 }
 
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::int32_t,
+                         Experimental::simd_abi::neon_fixed_size<2>>
+max(Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::neon_fixed_size<2>> const& a,
+    Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::neon_fixed_size<2>> const& b) {
+  return Experimental::basic_simd<std::int32_t,
+                                  Experimental::simd_abi::neon_fixed_size<2>>(
+      vmax_s32(static_cast<int32x2_t>(a), static_cast<int32x2_t>(b)));
+}
+
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::int32_t,
+                         Experimental::simd_abi::neon_fixed_size<2>>
+min(Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::neon_fixed_size<2>> const& a,
+    Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::neon_fixed_size<2>> const& b) {
+  return Experimental::basic_simd<std::int32_t,
+                                  Experimental::simd_abi::neon_fixed_size<2>>(
+      vmin_s32(static_cast<int32x2_t>(a), static_cast<int32x2_t>(b)));
+}
+
 namespace Experimental {
 
 template <typename SimdType, typename... Flags>
@@ -1771,6 +1884,45 @@ KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION void simd_partial_store(
   if (mask[1]) ptr[1] = simd[1];
 }
 
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM(
+    std::int32_t, simd_abi::neon_fixed_size<2>,
+    { return V([&](Impl::simd_size_t i) { return in[indices[i]]; }); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM_WITH_MASK(
+    std::int32_t, simd_abi::neon_fixed_size<2>, {
+      return V([&](Impl::simd_size_t i) {
+        return mask[i] ? in[indices[i]] : typename V::value_type{};
+      });
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM(
+    std::int32_t, simd_abi::neon_fixed_size<2>,
+    { return unchecked_gather_from<V>(in, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM_WITH_MASK(
+    std::int32_t, simd_abi::neon_fixed_size<2>,
+    { return unchecked_gather_from<V>(in, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO(
+    std::int32_t, simd_abi::neon_fixed_size<2>, {
+      out[indices[0]] = v[0];
+      out[indices[1]] = v[1];
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO_WITH_MASK(
+    std::int32_t, simd_abi::neon_fixed_size<2>, {
+      if (mask[0]) out[indices[0]] = v[0];
+      if (mask[1]) out[indices[1]] = v[1];
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO(
+    std::int32_t, simd_abi::neon_fixed_size<2>,
+    { unchecked_scatter_to<V>(v, out, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO_WITH_MASK(
+    std::int32_t, simd_abi::neon_fixed_size<2>,
+    { unchecked_scatter_to<V>(v, out, mask, indices, flag); })
+
 KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
 basic_simd<std::int32_t, simd_abi::neon_fixed_size<2>> condition(
     basic_simd_mask<std::int32_t, simd_abi::neon_fixed_size<2>> const& a,
@@ -1793,14 +1945,6 @@ class basic_simd<std::int32_t, simd_abi::neon_fixed_size<4>> {
   static constexpr std::integral_constant<Impl::simd_size_t, 4> size{};
 
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd() noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd const&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd&&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd const&) noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd&&) noexcept = default;
   template <class U>
     requires std::convertible_to<U, value_type>
   // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
@@ -2016,6 +2160,30 @@ trunc(Experimental::basic_simd<
   return a;
 }
 
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::int32_t,
+                         Experimental::simd_abi::neon_fixed_size<4>>
+max(Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::neon_fixed_size<4>> const& a,
+    Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::neon_fixed_size<4>> const& b) {
+  return Experimental::basic_simd<std::int32_t,
+                                  Experimental::simd_abi::neon_fixed_size<4>>(
+      vmaxq_s32(static_cast<int32x4_t>(a), static_cast<int32x4_t>(b)));
+}
+
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::int32_t,
+                         Experimental::simd_abi::neon_fixed_size<4>>
+min(Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::neon_fixed_size<4>> const& a,
+    Experimental::basic_simd<
+        std::int32_t, Experimental::simd_abi::neon_fixed_size<4>> const& b) {
+  return Experimental::basic_simd<std::int32_t,
+                                  Experimental::simd_abi::neon_fixed_size<4>>(
+      vminq_s32(static_cast<int32x4_t>(a), static_cast<int32x4_t>(b)));
+}
+
 namespace Experimental {
 
 template <typename SimdType, typename... Flags>
@@ -2107,6 +2275,49 @@ KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION void simd_partial_store(
   if (mask[3]) ptr[3] = simd[3];
 }
 
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM(
+    std::int32_t, simd_abi::neon_fixed_size<4>,
+    { return V([&](Impl::simd_size_t i) { return in[indices[i]]; }); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM_WITH_MASK(
+    std::int32_t, simd_abi::neon_fixed_size<4>, {
+      return V([&](Impl::simd_size_t i) {
+        return mask[i] ? in[indices[i]] : typename V::value_type{};
+      });
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM(
+    std::int32_t, simd_abi::neon_fixed_size<4>,
+    { return unchecked_gather_from<V>(in, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM_WITH_MASK(
+    std::int32_t, simd_abi::neon_fixed_size<4>,
+    { return unchecked_gather_from<V>(in, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO(
+    std::int32_t, simd_abi::neon_fixed_size<4>, {
+      out[indices[0]] = v[0];
+      out[indices[1]] = v[1];
+      out[indices[2]] = v[2];
+      out[indices[3]] = v[3];
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO_WITH_MASK(
+    std::int32_t, simd_abi::neon_fixed_size<4>, {
+      if (mask[0]) out[indices[0]] = v[0];
+      if (mask[1]) out[indices[1]] = v[1];
+      if (mask[2]) out[indices[2]] = v[2];
+      if (mask[3]) out[indices[3]] = v[3];
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO(
+    std::int32_t, simd_abi::neon_fixed_size<4>,
+    { unchecked_scatter_to<V>(v, out, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO_WITH_MASK(
+    std::int32_t, simd_abi::neon_fixed_size<4>,
+    { unchecked_scatter_to<V>(v, out, mask, indices, flag); })
+
 KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
 basic_simd<std::int32_t, simd_abi::neon_fixed_size<4>> condition(
     basic_simd_mask<std::int32_t, simd_abi::neon_fixed_size<4>> const& a,
@@ -2129,14 +2340,6 @@ class basic_simd<std::int64_t, simd_abi::neon_fixed_size<2>> {
   static constexpr std::integral_constant<Impl::simd_size_t, 2> size{};
 
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd() noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd const&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd&&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd const&) noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd&&) noexcept = default;
   template <class U>
     requires std::convertible_to<U, value_type>
   // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
@@ -2349,6 +2552,32 @@ trunc(Experimental::basic_simd<
   return a;
 }
 
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::int64_t,
+                         Experimental::simd_abi::neon_fixed_size<2>>
+max(Experimental::basic_simd<
+        std::int64_t, Experimental::simd_abi::neon_fixed_size<2>> const& a,
+    Experimental::basic_simd<
+        std::int64_t, Experimental::simd_abi::neon_fixed_size<2>> const& b) {
+  return Experimental::basic_simd<std::int64_t,
+                                  Experimental::simd_abi::neon_fixed_size<2>>(
+      vbslq_s64(static_cast<uint64x2_t>(a > b), static_cast<int64x2_t>(a),
+                static_cast<int64x2_t>(b)));
+}
+
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::int64_t,
+                         Experimental::simd_abi::neon_fixed_size<2>>
+min(Experimental::basic_simd<
+        std::int64_t, Experimental::simd_abi::neon_fixed_size<2>> const& a,
+    Experimental::basic_simd<
+        std::int64_t, Experimental::simd_abi::neon_fixed_size<2>> const& b) {
+  return Experimental::basic_simd<std::int64_t,
+                                  Experimental::simd_abi::neon_fixed_size<2>>(
+      vbslq_s64(static_cast<uint64x2_t>(a < b), static_cast<int64x2_t>(a),
+                static_cast<int64x2_t>(b)));
+}
+
 namespace Experimental {
 
 template <typename SimdType, typename... Flags>
@@ -2436,6 +2665,45 @@ KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION void simd_partial_store(
   if (mask[1]) ptr[1] = simd[1];
 }
 
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM(
+    std::int64_t, simd_abi::neon_fixed_size<2>,
+    { return V([&](Impl::simd_size_t i) { return in[indices[i]]; }); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM_WITH_MASK(
+    std::int64_t, simd_abi::neon_fixed_size<2>, {
+      return V([&](Impl::simd_size_t i) {
+        return mask[i] ? in[indices[i]] : typename V::value_type{};
+      });
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM(
+    std::int64_t, simd_abi::neon_fixed_size<2>,
+    { return unchecked_gather_from<V>(in, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM_WITH_MASK(
+    std::int64_t, simd_abi::neon_fixed_size<2>,
+    { return unchecked_gather_from<V>(in, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO(
+    std::int64_t, simd_abi::neon_fixed_size<2>, {
+      out[indices[0]] = v[0];
+      out[indices[1]] = v[1];
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO_WITH_MASK(
+    std::int64_t, simd_abi::neon_fixed_size<2>, {
+      if (mask[0]) out[indices[0]] = v[0];
+      if (mask[1]) out[indices[1]] = v[1];
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO(
+    std::int64_t, simd_abi::neon_fixed_size<2>,
+    { unchecked_scatter_to<V>(v, out, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO_WITH_MASK(
+    std::int64_t, simd_abi::neon_fixed_size<2>,
+    { unchecked_scatter_to<V>(v, out, mask, indices, flag); })
+
 KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
 basic_simd<std::int64_t, simd_abi::neon_fixed_size<2>> condition(
     basic_simd_mask<std::int64_t, simd_abi::neon_fixed_size<2>> const& a,
@@ -2458,14 +2726,6 @@ class basic_simd<std::uint64_t, simd_abi::neon_fixed_size<2>> {
   static constexpr std::integral_constant<Impl::simd_size_t, 2> size{};
 
   KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd() noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd const&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd(basic_simd&&) noexcept =
-      default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd const&) noexcept = default;
-  KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION basic_simd& operator=(
-      basic_simd&&) noexcept = default;
   template <class U>
     requires std::convertible_to<U, value_type>
   // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
@@ -2673,6 +2933,32 @@ trunc(Experimental::basic_simd<
   return a;
 }
 
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::uint64_t,
+                         Experimental::simd_abi::neon_fixed_size<2>>
+max(Experimental::basic_simd<
+        std::uint64_t, Experimental::simd_abi::neon_fixed_size<2>> const& a,
+    Experimental::basic_simd<
+        std::uint64_t, Experimental::simd_abi::neon_fixed_size<2>> const& b) {
+  return Experimental::basic_simd<std::uint64_t,
+                                  Experimental::simd_abi::neon_fixed_size<2>>(
+      vbslq_u64(static_cast<uint64x2_t>(a > b), static_cast<uint64x2_t>(a),
+                static_cast<uint64x2_t>(b)));
+}
+
+KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
+Experimental::basic_simd<std::uint64_t,
+                         Experimental::simd_abi::neon_fixed_size<2>>
+min(Experimental::basic_simd<
+        std::uint64_t, Experimental::simd_abi::neon_fixed_size<2>> const& a,
+    Experimental::basic_simd<
+        std::uint64_t, Experimental::simd_abi::neon_fixed_size<2>> const& b) {
+  return Experimental::basic_simd<std::uint64_t,
+                                  Experimental::simd_abi::neon_fixed_size<2>>(
+      vbslq_u64(static_cast<uint64x2_t>(a < b), static_cast<uint64x2_t>(a),
+                static_cast<uint64x2_t>(b)));
+}
+
 namespace Experimental {
 
 template <typename SimdType, typename... Flags>
@@ -2759,6 +3045,45 @@ KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION void simd_partial_store(
   if (mask[0]) ptr[0] = simd[0];
   if (mask[1]) ptr[1] = simd[1];
 }
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM(
+    std::uint64_t, simd_abi::neon_fixed_size<2>,
+    { return V([&](Impl::simd_size_t i) { return in[indices[i]]; }); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_GATHER_FROM_WITH_MASK(
+    std::uint64_t, simd_abi::neon_fixed_size<2>, {
+      return V([&](Impl::simd_size_t i) {
+        return mask[i] ? in[indices[i]] : typename V::value_type{};
+      });
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM(
+    std::uint64_t, simd_abi::neon_fixed_size<2>,
+    { return unchecked_gather_from<V>(in, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_GATHER_FROM_WITH_MASK(
+    std::uint64_t, simd_abi::neon_fixed_size<2>,
+    { return unchecked_gather_from<V>(in, mask, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO(
+    std::uint64_t, simd_abi::neon_fixed_size<2>, {
+      out[indices[0]] = v[0];
+      out[indices[1]] = v[1];
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_UNCHECKED_SCATTER_TO_WITH_MASK(
+    std::uint64_t, simd_abi::neon_fixed_size<2>, {
+      if (mask[0]) out[indices[0]] = v[0];
+      if (mask[1]) out[indices[1]] = v[1];
+    })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO(
+    std::uint64_t, simd_abi::neon_fixed_size<2>,
+    { unchecked_scatter_to<V>(v, out, indices, flag); })
+
+KOKKOS_SIMD_IMPL_MEMORY_PERMUTE_PARTIAL_SCATTER_TO_WITH_MASK(
+    std::uint64_t, simd_abi::neon_fixed_size<2>,
+    { unchecked_scatter_to<V>(v, out, mask, indices, flag); })
 
 KOKKOS_IMPL_HOST_FORCEINLINE_FUNCTION
 basic_simd<std::uint64_t, simd_abi::neon_fixed_size<2>> condition(
